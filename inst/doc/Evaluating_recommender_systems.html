@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Evaluating recommender systems</title>
+
+<script>$(document).ready(function(){
+    if (typeof $('[data-toggle="tooltip"]').tooltip === 'function') {
+        $('[data-toggle="tooltip"]').tooltip();
+    }
+    if ($('[data-toggle="popover"]').popover === 'function') {
+        $('[data-toggle="popover"]').popover();
+    }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(data-line-number);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Evaluating recommender systems</h1>
+
+
+
+<p>This vignette is an introduction to the R package <a href="https://cran.r-project.org/package=recometrics">recometrics</a> for evaluating recommender systems built with implicit-feedback data, assuming that the recommendation models are based on low-rank matrix factorization (example such packages: <a href="https://cran.r-project.org/package=cmfrec">cmfrec</a>, <a href="https://cran.r-project.org/package=rsparse">rsparse</a>, <a href="https://cran.r-project.org/package=recosystem">recosystem</a>, among many others), or assuming that it is possible to compute a user-item score as a dot product of user and item factors/components/attributes.</p>
+<div id="implicit-feedback-data" class="section level3">
+<h3>Implicit-feedback data</h3>
+<p>Historically, many models for recommender systems were designed by approaching the problem as regression or rating prediction, by taking as input a matrix <span class="math inline">\(\mathbf{X}_{ui}\)</span> denoting user likes and dislikes of items in a scale (e.g. users giving a 1-to-5 star rating to different movies), and evaluating such models by seeing how well they predict these ratings on hold-out data.</p>
+<p>In many cases, it is impossible or very expensive to obtain such data, but one has instead so called “implicit-feedback” records: that is, observed logs of user interactions with items (e.g. number of times that a user played each song in a music service), which do not signal dislikes in the same way as a 1-star rating would, but can still be used for building and evaluating recommender systems.</p>
+<p>In the latter case, the problem is approached more as ranking or classification instead of regression, with the models being evaluated not by how well they perform at predicting ratings, but by how good they are at scoring the observed interactions higher than the non-observed interactions for each user, using metrics more typical of information retrieval.</p>
+<p>Generating a ranked list of items for each user according to their predicted score and comparing such lists against hold-out data can nevertheless be very slow (might even be slower than fitting the model itself), and this is where <code>recometrics</code> comes in: it provides efficient routines for calculating many implicit-feedback recommendation quality metrics, which exploit multi-threading, SIMD instructions, and efficient sorted search procedures.</p>
+</div>
+<div id="matrix-factorization-models" class="section level3">
+<h3>Matrix factorization models</h3>
+<p>The perhaps most common approach towards building a recommendation model is by trying to approximate the matrix <span class="math inline">\(\mathbf{X}_{mn}\)</span> as the product of two lower-dimensional matrices <span class="math inline">\(\mathbf{A}_{mk}\)</span> and <span class="math inline">\(\mathbf{B}_{nk}\)</span> (with <span class="math inline">\(k \ll m\)</span> and <span class="math inline">\(k \ll n\)</span>), representing latent user and item factors/components, respectively (which are the model parameters to estimate) - i.e. <span class="math display">\[
+\mathbf{X} \approx \mathbf{A} \mathbf{B}^T
+\]</span> In the explicit-feedback setting (e.g. movie ratings), this is typically done by trying to minimize squared errors with respect to the <strong>observed</strong> entries in <span class="math inline">\(\mathbf{X}\)</span>, while in implicit-feedback settings this is typically done by turning the <span class="math inline">\(\mathbf{X}\)</span> matrix into a binary matrix which has a one if the observation is observed and a zero if not, using the actual values (e.g. number of times that a song was played) instead as weights for the positive entries, thereby looking at <strong>all</strong> entries rather than just the observed (non-zero) values - e.g.: <span class="math display">\[
+\min_{\mathbf{A}, \mathbf{B}} \sum_{u=1}^{m} \sum_{i=1}^{n} x_{ui} (I_{x_{ui}&gt;0} - \mathbf{a}_u \cdot \mathbf{b}_i)^2
+\]</span></p>
+<p>The recommendations for a given user are then produced by calculating the full products between that user vector <span class="math inline">\(\mathbf{a}_u\)</span> and the <span class="math inline">\(\mathbf{B}\)</span> matrix, sorting these predicted scores in descending order.</p>
+<p>For a better overview of implicit-feedback matrix factorization, see the paper <em>Hu, Yifan, Yehuda Koren, and Chris Volinsky. “Collaborative filtering for implicit feedback datasets.” 2008 Eighth IEEE International Conference on Data Mining. Ieee, 2008.</em></p>
+</div>
+<div id="evaluating-recommendation-models" class="section level2">
+<h2>Evaluating recommendation models</h2>
+<p>Such matrix factorization models are commonly evaluated by setting aside a small amount of users as hold-out for evaluation, fitting a model to all the remaining users and items. Then, from the evaluation users, a fraction of their interactions data is set as a hold-out test set, while their latent factors are computed using the rest of the data and the previously fitted model from the other users.</p>
+<p>Then, top-K recommendations for each user are produced, discarding the non-hold-out items with which their latent factors were just determined, and these top-K lists are compared against the hold-out test items, seeing how well they do at ranking them near the top vs. how they rank the remainder of the items.</p>
+<hr />
+<p>This package can be used to calculate many recommendation quality metrics given the user and item factors and the train-test data split that was used, including:</p>
+<ul>
+<li><p><strong>P@K</strong> (“precision-at-k”): this is the most intuitive metric. It calculates the proportion of the top-K recommendations that include items from the test set for a given user - i.e. <span class="math display">\[
+P@K = \frac{1}{k} \sum_{i=1}^k
+\begin{cases}
+  1, &amp; r_i \in \mathcal{T}\\
+  0, &amp; \text{otherwise}
+\end{cases}
+\]</span> Where <span class="math inline">\(r_i\)</span> is the item ranked at position <span class="math inline">\(i\)</span> by the model (sorting the predicted scores in descending order, after excluding the items in the training data for that user), and <span class="math inline">\(\mathcal{T}\)</span> is the set of items that are in the test set for that user.</p>
+<p>Note that some papers and libraries define <span class="math inline">\(P@K\)</span> differently, see the second version below.</p></li>
+<li><p><strong>TP@K</strong> (truncated <span class="math inline">\(P@K\)</span>): same calculation as <span class="math inline">\(P@K\)</span>, but will instead divide by the minimum between <span class="math inline">\(k\)</span> and the number of test items: <span class="math display">\[
+TP@K = \frac{1}{\min\{k, |\mathcal{T}|\}} \sum_{i=1}^k
+\begin{cases}
+  1, &amp; r_i \in \mathcal{T}\\
+  0, &amp; \text{otherwise}
+\end{cases}
+\]</span></p>
+<p>The “truncated” prefix is a non-standard nomenclature introduced here to differentiate it from the other <span class="math inline">\(P@K\)</span> metric.</p></li>
+<li><p><strong>R@K</strong> (“recall-at-k”): while <span class="math inline">\(P@K\)</span> offers an intuitive metric that captures what a recommender system aims at being good at, it does not capture the fact that, the more test items there are, the higher the chances that they will be included in the top-K recommendations. Recall instead looks at what proportion of the test items would have been retrieved with the top-K recommended list: <span class="math display">\[
+R@K = \frac{1}{|\mathcal{T}|} \sum_{i=1}^k
+\begin{cases}
+  1, &amp; r_i \in \mathcal{T}\\
+  0, &amp; \text{otherwise}
+\end{cases}
+\]</span></p></li>
+<li><p><strong>AP@K</strong> (“average precision-at-k”): precision and recall look at all the items in the top-K equally, whereas one might want to take into account also the ranking within this top-K list, for which this metric comes in handy. “Average Precision” tries to reflect the precisions that would be obtained at different recalls: <span class="math display">\[
+AP@K = \frac{1}{|\mathcal{T}|} \sum_{i=1}^k
+\begin{cases}
+  P@i, &amp; r_i \in \mathcal{T}\\
+  0, &amp; \text{otherwise}
+\end{cases}
+\]</span> <span class="math inline">\(AP@K\)</span> is a metric which to some degree considers precision, recall, and rank within top-K. Intuitively, it tries to approximate the are under a precision-recall tradeoff curve. Its average across users is typically called “MAP@K” or “Mean Average Precision”.</p>
+<p><strong>Important:</strong> many authors define <span class="math inline">\(AP@K\)</span> differently, such as dividing by the minimum between <span class="math inline">\(k\)</span> and <span class="math inline">\(|\mathcal{T}|\)</span> instead, or as the average for P@1..P@K (either as-is or stopping the calculation after already retrieving all test items). See below for the other version.</p></li>
+<li><p><strong>TAP@K</strong> (truncated <span class="math inline">\(AP@K\)</span>): a truncated version of the <span class="math inline">\(AP@K\)</span> metric, which will instead divide it by the minimum between <span class="math inline">\(k\)</span> and the number of test items. Just like for <span class="math inline">\(TP@K\)</span>, the “truncated” prefix is a non-standard nomenclature used here to differentiate it from the other more typical <span class="math inline">\(AP@K\)</span>.</p></li>
+<li><p><strong>NDCG@K</strong> (“normalized discounted cumulative gain at k”): while the earlier metrics look at just the presence of an item in the test set, these items might not all be as good, with some of them having higher observed values than others. NDCG aims at judging these values, but discounted according to the rank in the top-K list. First it calculates the unstandardized discounted cumulative gain: <span class="math display">\[
+DCG@K = \sum_{i=1}^{k} \frac{C_{r_i}}{log_2 (1+i)}
+\]</span> Where <span class="math inline">\(C_{r_i}\)</span> indicates the observed interaction value in the test data for item <span class="math inline">\(r_i\)</span>, and is zero if the item was not in the test data. The DCG@K metric is then standardized by dividing it by the maximum achievable DCG@K for the test data: <span class="math display">\[
+NDCG@K = \frac{DCG@K}{\max DCG@K}
+\]</span></p>
+<p>Unlike the other metrics, NDCG can handle data which contains “dislikes” in the form of negative values. If there are no negative values in the test data, it will be bounded between zero and one.</p></li>
+<li><p><strong>Hit@K</strong> (from which “Hit Rate” is calculated): this is a simpler yes/no metric that looks at whether any of the top-K recommended items were in the test set for a given user: <span class="math display">\[
+Hit@K = \max_{i=1..K}
+\begin{cases}
+  1, &amp; r_i \in \mathcal{T}\\
+  0, &amp; \text{otherwise}
+\end{cases}
+\]</span> The average of this metric across users is typically called “Hit Rate”.</p></li>
+<li><p><strong>RR@K</strong> (“reciprocal rank at k”, from which “MRR” or “mean reciprocal rank” is calculated): this metric only looks at the rank of the first recommended item that is in the test set, and outputs its inverse: <span class="math display">\[
+RR@K = \max_{i=1..K} \frac{1}{i} \:\:\:\text{s.t.}\:\:\: r_i \in \mathcal{T}
+\]</span> The average of this metric across users is typically called “Mean Reciprocal Rank”.</p></li>
+<li><p><strong>ROC AUC</strong> (“area under the receiver-operating characteristic curve”): see the <a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic">Wikipedia entry</a> for details. While the metrics above only looked at the top-K recommended items, this metric looks at the full ranking of items instead, and produces a standardized number between zero and one in which 0.5 denotes random predictions.</p></li>
+<li><p><strong>PR AUC</strong> (“area under the precision-recall curve”): while ROC AUC provides an overview of the overall ranking, one is typically only interested in how well it retrieves test items within top ranks, and for this the area under the precision-recall curve can do a better job at judging rankings, albeit the metric itself is not standardized and its minimum does not go as low as zero.</p>
+<p>The metric is calculated using the fast but not-so-precise rectangular method, whose formula corresponds to the AP@K metric with K=N. Some papers and libraries call this the average of this metric the “MAP” or “Mean Average Precision” instead (without the “@K”).</p></li>
+</ul>
+<p><em>(For more details about the metrics, see the package documentation: <code>?calc.reco.metrics</code>)</em></p>
+<p><strong>NOT</strong> covered by this package:</p>
+<ul>
+<li><p>Metrics that look at the rareness of the items recommended (to evaluate so-called “serendipity”).</p></li>
+<li><p>Metrics that look at “discoverability”.</p></li>
+<li><p>Metrics that take into account the diversity of the ranked lists.</p></li>
+</ul>
+<hr />
+<p>Now a practical example using the library <a href="https://cran.r-project.org/package=cmfrec">cmfrec</a> and the MovieLens100K data, taken from the <a href="https://cran.r-project.org/package=recommenderlab">recommenderlab</a> package.</p>
+<p>Note that this is an explicit-feedback dataset about movie ratings. Here it will be converted to implicit-feedback by setting movies with a rating of 4 and 5 stars as the positive (observed) data, while the others will be set as negative (unobserved).</p>
+<div id="loading-the-data" class="section level4">
+<h4>Loading the data</h4>
+<p>This section will load the MovieLens100K data and filter out observations with a rating of less than 4 stars in order to have something that resembles implicit feedback.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(Matrix)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">library</span>(MatrixExtra)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">library</span>(data.table)</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">library</span>(kableExtra)</a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">library</span>(recommenderlab)</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">library</span>(cmfrec)</a>
+<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">library</span>(recometrics)</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">data</span>(MovieLense)</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">X_raw &lt;-<span class="st"> </span>MovieLense<span class="op">@</span>data</a>
+<a class="sourceLine" id="cb1-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="co">### Converting it to implicit-feedback</span></a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">X_implicit &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">filterSparse</span>(X_raw, <span class="cf">function</span>(x) x <span class="op">&gt;=</span><span class="st"> </span><span class="dv">4</span>))</a>
+<a class="sourceLine" id="cb1-14" data-line-number="14"><span class="kw">str</span>(X_implicit)</a></code></pre></div>
+<pre><code>#&gt; Formal class 'dgTMatrix' [package &quot;Matrix&quot;] with 6 slots
+#&gt;   ..@ i       : int [1:55024] 0 1 4 5 9 15 16 17 20 22 ...
+#&gt;   ..@ j       : int [1:55024] 0 0 0 0 0 0 0 0 0 0 ...
+#&gt;   ..@ Dim     : int [1:2] 943 1664
+#&gt;   ..@ Dimnames:List of 2
+#&gt;   .. ..$ : chr [1:943] &quot;1&quot; &quot;2&quot; &quot;3&quot; &quot;4&quot; ...
+#&gt;   .. ..$ : chr [1:1664] &quot;Toy Story (1995)&quot; &quot;GoldenEye (1995)&quot; &quot;Four Rooms (1995)&quot; &quot;Get Shorty (1995)&quot; ...
+#&gt;   ..@ x       : num [1:55024] 5 4 4 4 4 5 4 5 5 5 ...
+#&gt;   ..@ factors : list()</code></pre>
+</div>
+<div id="creating-a-train-test-split" class="section level4">
+<h4>Creating a train-test split</h4>
+<p>Now leaving aside a random sample of 100 users for model evaluation, for whom 30% of the data will be left as a hold-out test set.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">reco_split &lt;-<span class="st"> </span><span class="kw">create.reco.train.test</span>(</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">    X_implicit,</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">    <span class="dt">users_test_fraction =</span> <span class="ot">NULL</span>,</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">    <span class="dt">max_test_users =</span> <span class="dv">100</span>,</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">    <span class="dt">items_test_fraction =</span> <span class="fl">0.3</span>,</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">    <span class="dt">seed =</span> <span class="dv">123</span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">)</a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">X_train &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_train <span class="co">## Train data for test users</span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">X_test &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_test <span class="co">## Test data for test users</span></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">X_rem &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_rem <span class="co">## Data to fit the model</span></a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">users_test &lt;-<span class="st"> </span>reco_split<span class="op">$</span>users_test <span class="co">## IDs of the test users</span></a></code></pre></div>
+</div>
+<div id="establishing-baselines" class="section level4">
+<h4>Establishing baselines</h4>
+<p>In order to determine if a personalized recommendation model is bringing value or not, it’s logical to compare such model against the simplest possible ways of making recommendations, such as:</p>
+<ul>
+<li>Making random predictions.</li>
+<li>Always predicting the same score for each item regardless of the user (non-personalized).</li>
+</ul>
+<p>This section creates such baselines to compare against.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co">### Random recommendations (random latent factors)</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">UserFactors_random &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="kw">nrow</span>(X_test) <span class="op">*</span><span class="st"> </span><span class="dv">5</span>), <span class="dt">nrow=</span><span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">ItemFactors_random &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="kw">ncol</span>(X_test) <span class="op">*</span><span class="st"> </span><span class="dv">5</span>), <span class="dt">nrow=</span><span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="co">### Non-personalized recommendations</span></a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">model_baseline &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">MostPopular</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">implicit=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">item_biases &lt;-<span class="st"> </span>model_baseline<span class="op">$</span>matrices<span class="op">$</span>item_bias</a></code></pre></div>
+</div>
+<div id="fitting-models" class="section level4">
+<h4>Fitting models</h4>
+<p>This section will fit a few models in order to have different ranked lists to evaluate:</p>
+<ul>
+<li>The typical implicit-feedback matrix factorization model described at the beginning, which considers all the entries in the matrix as zero or one with weights, minimizing squared error across all of them. This is known as the “weighted regularized matrix factorization” (WRMF) model or the implicit-ALS (“iALS”) model.</li>
+<li>The classic explicit-feedback model, using the full explicit-feedback ratings data. This model minimizes squared error across the observed entries only, and uses a regularization parameter which scales with the number of entries for each user and item (hence the name “Weighted-Lambda Regularized”).</li>
+<li>Another explicit-feedback model, but without scaling the regularization parameter (this tends to result in higher RMSE but much better top-K recommendations), and additionally factorizing also a binarized version of the explicit-feedback data (without weights) as a secondary objective. Note that this model still minimizes squared error with respected to the observed entries, but the exact objective is slightly different from that of the “Weighted-Lambda” model.</li>
+</ul>
+<p>All of these models are taken from the <code>cmfrec</code> package - see its documentation for more details about the models.</p>
+<p><strong>Important:</strong> for the explicit-feedback models, it’s not possible to use the same train-test split strategy as for the implicit-feedback variants, as the training data contains only 4 and 5 stars, which does not signal any dislikes and thus puts these models at a disadvantage. As such, here the user factors will be obtained from the full data (train+test), which gives them a quite unfair advantage compared to the other models.</p>
+<p>In theory, one could also split the full ratings data, and filter out low-star ratings in the test set only, but that would still distort a bit the metrics for implicit-feedback models. Alternatively, one could adjust the WRMF model to take low-star ratings as more negative entries with higher weight (e.g. giving them a value of -1 and a weight of 5 minus rating), which is supported by e.g. <code>cmfrec</code>. Note however that the only metric in this package that can accomodate such a scenatio (implicit feedback plus dislikes) is the <span class="math inline">\(NDCG@K\)</span> metric.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="co">### Typical implicit-feedback ALS model</span></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="co">### a.k.a. &quot;WRMF&quot; (weighted regularized matrix factorization)</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">model_wrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF_implicit</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">UserFactors_wrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_wrmf, X_train))</a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="co">### As a comparison, this is the typical explicit-feedback model,</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="co">### implemented by software such as Spark,</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="co">### and called &quot;Weighted-Lambda-Regularized Matrix Factorization&quot;.</span></a>
+<a class="sourceLine" id="cb5-10" data-line-number="10"><span class="co">### Note that it determines the user factors using the train+test data.</span></a>
+<a class="sourceLine" id="cb5-11" data-line-number="11"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb5-12" data-line-number="12">model_wlr &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(<span class="kw">as.coo.matrix</span>(X_raw[<span class="op">-</span>users_test, ]),</a>
+<a class="sourceLine" id="cb5-13" data-line-number="13">                         <span class="dt">lambda=</span><span class="fl">0.1</span>, <span class="dt">scale_lam=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb5-14" data-line-number="14">                         <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb5-15" data-line-number="15">                         <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb5-16" data-line-number="16">UserFactors_wlr &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_wlr, <span class="kw">as.csr.matrix</span>(X_raw)[users_test,]))</a>
+<a class="sourceLine" id="cb5-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb5-18" data-line-number="18"><span class="co">### This is a different explicit-feedback model which</span></a>
+<a class="sourceLine" id="cb5-19" data-line-number="19"><span class="co">### uses the same regularization for each user and item</span></a>
+<a class="sourceLine" id="cb5-20" data-line-number="20"><span class="co">### (as opposed to the &quot;weighted-lambda&quot; model) and which</span></a>
+<a class="sourceLine" id="cb5-21" data-line-number="21"><span class="co">### adds &quot;implicit features&quot;, which are a binarized version</span></a>
+<a class="sourceLine" id="cb5-22" data-line-number="22"><span class="co">### of the input data, but without weights.</span></a>
+<a class="sourceLine" id="cb5-23" data-line-number="23"><span class="co">### Note that it determines the user factors using the train+test data.</span></a>
+<a class="sourceLine" id="cb5-24" data-line-number="24"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb5-25" data-line-number="25">model_hybrid &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(<span class="kw">as.coo.matrix</span>(X_raw[<span class="op">-</span>users_test, ]),</a>
+<a class="sourceLine" id="cb5-26" data-line-number="26">                            <span class="dt">lambda=</span><span class="dv">20</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb5-27" data-line-number="27">                            <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb5-28" data-line-number="28">                            <span class="dt">add_implicit_features=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb5-29" data-line-number="29">                            <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb5-30" data-line-number="30">UserFactors_hybrid &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_hybrid, <span class="kw">as.csr.matrix</span>(X_raw)[users_test,]))</a></code></pre></div>
+</div>
+<div id="other-models" class="section level4">
+<h4>Other models</h4>
+<p>The MovieLens100K data used here comes with metadata/attributes about the users (gender, occupation, age, among others) and the items (genre and year of release), which so far have not been incorporated into these models.</p>
+<p>One simple way of adding this secondary information into the same WRMF model is through the concept of “Collective Matrix Factorization”, which does so by also factorizing the side information matrices, but using the same user/item factors - see the documentation of <code>cmfrec</code> for more details about this approach.</p>
+<p>As well, one typical trick in the explicit-feedback variant is to add a fixed bias/intercept for each user and item, which is also possible to do in the WRMF model by making some slight modifications to the optimization procedure.</p>
+<p>This section will fit additional variations of the WRMF model to compare against:</p>
+<ul>
+<li>The “collective” version, using side information (“CWRMF”). Note that the side information needs to be processed from its raw form first. The side information acts as an implicit regularizer (informally, the factors now need to explain both the observed interactions and the side attributes), and as such, the optimal regularization for this kind of model is typically lower than without the side information.</li>
+<li>The “biased” version (“bWRMF”), but adding only item biases as the user biases do not tend to improve results. Note that the package <code>cmfrec</code> does not provide this option for implicit-feedback models, but it offers a lot of flexibility in what kind of objective to optimize in its main function (<code>CMF</code>), which can mimic a variety of models (e.g. the “Weighted-Lambda” or the “WRMF”) depending on the parameters - here, the model will be fit by manually re-creating the WRMF variant (missing-as-zero, binarized matrix, positive entries weighted by the actual values plus one as in the original paper), which in turn requires manually creating the binarized <code>X</code> matrix and the weights.</li>
+<li>Biases and collective matrix factorization are not mutually exclusive, so both of these can be combined into a biased collective WRMF (“bCWRMF”).</li>
+</ul>
+<p>First processing the data as required for the new models:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">### Processing user side information</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">U &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseUser)[<span class="op">-</span>users_test, ]</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">mean_age &lt;-<span class="st"> </span>U[, <span class="kw">mean</span>(age)]</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">sd_age &lt;-<span class="st"> </span>U[, <span class="kw">sd</span>(age)]</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5">levels_occ &lt;-<span class="st"> </span>U[, <span class="kw">levels</span>(occupation)]</a>
+<a class="sourceLine" id="cb6-6" data-line-number="6">MatrixExtra<span class="op">::</span><span class="kw">restore_old_matrix_behavior</span>()</a>
+<a class="sourceLine" id="cb6-7" data-line-number="7">process.U &lt;-<span class="st"> </span><span class="cf">function</span>(U, mean_age,sd_age, levels_occ) {</a>
+<a class="sourceLine" id="cb6-8" data-line-number="8">    U[, <span class="st">`</span><span class="dt">:=</span><span class="st">`</span>(</a>
+<a class="sourceLine" id="cb6-9" data-line-number="9">        <span class="dt">id =</span> <span class="ot">NULL</span>,</a>
+<a class="sourceLine" id="cb6-10" data-line-number="10">        <span class="dt">age =</span> (age <span class="op">-</span><span class="st"> </span>mean_age) <span class="op">/</span><span class="st"> </span>sd_age,</a>
+<a class="sourceLine" id="cb6-11" data-line-number="11">        <span class="dt">sex =</span> <span class="kw">as.numeric</span>(sex <span class="op">==</span><span class="st"> &quot;M&quot;</span>),</a>
+<a class="sourceLine" id="cb6-12" data-line-number="12">        <span class="dt">occupation =</span>  <span class="kw">factor</span>(occupation, levels_occ),</a>
+<a class="sourceLine" id="cb6-13" data-line-number="13">        <span class="dt">zipcode =</span> <span class="ot">NULL</span></a>
+<a class="sourceLine" id="cb6-14" data-line-number="14">    )]</a>
+<a class="sourceLine" id="cb6-15" data-line-number="15">    U &lt;-<span class="st"> </span>Matrix<span class="op">::</span><span class="kw">sparse.model.matrix</span>(<span class="op">~</span>.<span class="op">-</span><span class="dv">1</span>, <span class="dt">data=</span>U)</a>
+<a class="sourceLine" id="cb6-16" data-line-number="16">    U &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(U)</a>
+<a class="sourceLine" id="cb6-17" data-line-number="17">    <span class="kw">return</span>(U)</a>
+<a class="sourceLine" id="cb6-18" data-line-number="18">}</a>
+<a class="sourceLine" id="cb6-19" data-line-number="19">U &lt;-<span class="st"> </span><span class="kw">process.U</span>(U, mean_age,sd_age, levels_occ)</a>
+<a class="sourceLine" id="cb6-20" data-line-number="20">U_train &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseUser)[users_test, ]</a>
+<a class="sourceLine" id="cb6-21" data-line-number="21">U_train &lt;-<span class="st"> </span><span class="kw">process.U</span>(U_train, mean_age,sd_age, levels_occ)</a>
+<a class="sourceLine" id="cb6-22" data-line-number="22"></a>
+<a class="sourceLine" id="cb6-23" data-line-number="23"><span class="co">### Processing item side information</span></a>
+<a class="sourceLine" id="cb6-24" data-line-number="24">I &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseMeta)</a>
+<a class="sourceLine" id="cb6-25" data-line-number="25">mean_year &lt;-<span class="st"> </span>I[, <span class="kw">mean</span>(year, <span class="dt">na.rm=</span><span class="ot">TRUE</span>)]</a>
+<a class="sourceLine" id="cb6-26" data-line-number="26">sd_year &lt;-<span class="st"> </span>I[, <span class="kw">sd</span>(year, <span class="dt">na.rm=</span><span class="ot">TRUE</span>)]</a>
+<a class="sourceLine" id="cb6-27" data-line-number="27">I[</a>
+<a class="sourceLine" id="cb6-28" data-line-number="28">    <span class="kw">is.na</span>(year), year <span class="op">:</span><span class="er">=</span><span class="st"> </span>mean_year</a>
+<a class="sourceLine" id="cb6-29" data-line-number="29">][, <span class="st">`</span><span class="dt">:=</span><span class="st">`</span>(</a>
+<a class="sourceLine" id="cb6-30" data-line-number="30">    <span class="dt">title =</span> <span class="ot">NULL</span>,</a>
+<a class="sourceLine" id="cb6-31" data-line-number="31">    <span class="dt">year =</span> (year <span class="op">-</span><span class="st"> </span>mean_year) <span class="op">/</span><span class="st"> </span>sd_year,</a>
+<a class="sourceLine" id="cb6-32" data-line-number="32">    <span class="dt">url =</span> <span class="ot">NULL</span></a>
+<a class="sourceLine" id="cb6-33" data-line-number="33">)]</a>
+<a class="sourceLine" id="cb6-34" data-line-number="34">I &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(I)</a>
+<a class="sourceLine" id="cb6-35" data-line-number="35"></a>
+<a class="sourceLine" id="cb6-36" data-line-number="36"><span class="co">### Manually re-creating a binarized matrix and weights</span></a>
+<a class="sourceLine" id="cb6-37" data-line-number="37"><span class="co">### that will mimic the WRMF model</span></a>
+<a class="sourceLine" id="cb6-38" data-line-number="38">X_rem_ones &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(X_rem)</a>
+<a class="sourceLine" id="cb6-39" data-line-number="39">W_rem &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>X_rem_ones<span class="op">@</span>x</a>
+<a class="sourceLine" id="cb6-40" data-line-number="40">X_rem_ones<span class="op">@</span>x &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">length</span>(X_rem_ones<span class="op">@</span>x))</a>
+<a class="sourceLine" id="cb6-41" data-line-number="41">X_train_ones &lt;-<span class="st"> </span>X_train</a>
+<a class="sourceLine" id="cb6-42" data-line-number="42">W_train &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>X_train_ones<span class="op">@</span>x</a>
+<a class="sourceLine" id="cb6-43" data-line-number="43">X_train_ones<span class="op">@</span>x &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">length</span>(X_train_ones<span class="op">@</span>x))</a></code></pre></div>
+<p>Now fitting the models:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="co">### WRMF model, but with item biases/intercepts</span></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">model_bwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(X_rem_ones, <span class="dt">weight=</span>W_rem, <span class="dt">NA_as_zero=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">                           <span class="dt">lambda=</span><span class="dv">1</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb7-5" data-line-number="5">                           <span class="dt">center=</span><span class="ot">FALSE</span>, <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-6" data-line-number="6">                           <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb7-7" data-line-number="7">UserFactors_bwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_bwrmf, X_train_ones, <span class="dt">weight=</span>W_train))</a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb7-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb7-10" data-line-number="10"><span class="co">### Collective WRMF model (taking user and item attributes)</span></a>
+<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb7-12" data-line-number="12">model_cwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF_implicit</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">U=</span>U, <span class="dt">I=</span>I,</a>
+<a class="sourceLine" id="cb7-13" data-line-number="13">                                    <span class="dt">NA_as_zero_user=</span><span class="ot">TRUE</span>, <span class="dt">NA_as_zero_item=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-14" data-line-number="14">                                    <span class="dt">center_U=</span><span class="ot">TRUE</span>, <span class="dt">center_I=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-15" data-line-number="15">                                    <span class="dt">lambda=</span><span class="fl">0.1</span>,</a>
+<a class="sourceLine" id="cb7-16" data-line-number="16">                                    <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb7-17" data-line-number="17">UserFactors_cwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_cwrmf, X_train, <span class="dt">U=</span>U_train))</a>
+<a class="sourceLine" id="cb7-18" data-line-number="18"></a>
+<a class="sourceLine" id="cb7-19" data-line-number="19"><span class="co">### Collective WRMF plus item biases/intercepts</span></a>
+<a class="sourceLine" id="cb7-20" data-line-number="20"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb7-21" data-line-number="21">model_bcwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(X_rem_ones, <span class="dt">weight=</span>W_rem, <span class="dt">NA_as_zero=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-22" data-line-number="22">                            <span class="dt">U=</span>U, <span class="dt">I=</span>I, <span class="dt">center_U=</span><span class="ot">FALSE</span>, <span class="dt">center_I=</span><span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb7-23" data-line-number="23">                            <span class="dt">NA_as_zero_user=</span><span class="ot">TRUE</span>, <span class="dt">NA_as_zero_item=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-24" data-line-number="24">                            <span class="dt">lambda=</span><span class="fl">0.1</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</a>
+<a class="sourceLine" id="cb7-25" data-line-number="25">                            <span class="dt">center=</span><span class="ot">FALSE</span>, <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">TRUE</span>,</a>
+<a class="sourceLine" id="cb7-26" data-line-number="26">                            <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb7-27" data-line-number="27">UserFactors_bcwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_bcwrmf, X_train_ones,</a>
+<a class="sourceLine" id="cb7-28" data-line-number="28">                                        <span class="dt">weight=</span>W_train, <span class="dt">U=</span>U_train))</a></code></pre></div>
+</div>
+<div id="calculating-metrics" class="section level4">
+<h4>Calculating metrics</h4>
+<p>Finally, calculating recommendation quality metrics for all these models:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">k &lt;-<span class="st"> </span><span class="dv">5</span> <span class="co">## Top-K recommendations to evaluate</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="co">### Baselines</span></a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">metrics_random &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">                                    <span class="dt">A=</span>UserFactors_random,</a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">                                    <span class="dt">B=</span>ItemFactors_random,</a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-8" data-line-number="8">metrics_baseline &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">                                      <span class="dt">A=</span><span class="ot">NULL</span>, <span class="dt">B=</span><span class="ot">NULL</span>,</a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">                                      <span class="dt">item_biases=</span>item_biases,</a>
+<a class="sourceLine" id="cb8-11" data-line-number="11">                                      <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb8-13" data-line-number="13"><span class="co">### Simple models</span></a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">metrics_wrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">                                  <span class="dt">A=</span>UserFactors_wrmf,</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">                                  <span class="dt">B=</span>model_wrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">                                  <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">metrics_wlr &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">                                 <span class="dt">A=</span>UserFactors_wlr,</a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">                                 <span class="dt">B=</span>model_wlr<span class="op">$</span>matrices<span class="op">$</span>B,</a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">                                 <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">metrics_hybrid &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">                                    <span class="dt">A=</span>UserFactors_hybrid,</a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">                                    <span class="dt">B=</span>model_hybrid<span class="op">$</span>matrices<span class="op">$</span>B,</a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-26" data-line-number="26"></a>
+<a class="sourceLine" id="cb8-27" data-line-number="27"><span class="co">### More complex models</span></a>
+<a class="sourceLine" id="cb8-28" data-line-number="28">metrics_bwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-29" data-line-number="29">                                   <span class="dt">A=</span>UserFactors_bwrmf,</a>
+<a class="sourceLine" id="cb8-30" data-line-number="30">                                   <span class="dt">B=</span>model_bwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
+<a class="sourceLine" id="cb8-31" data-line-number="31">                                   <span class="dt">item_biases=</span>model_bwrmf<span class="op">$</span>matrices<span class="op">$</span>item_bias,</a>
+<a class="sourceLine" id="cb8-32" data-line-number="32">                                   <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-33" data-line-number="33">metrics_cwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-34" data-line-number="34">                                   <span class="dt">A=</span>UserFactors_cwrmf,</a>
+<a class="sourceLine" id="cb8-35" data-line-number="35">                                   <span class="dt">B=</span>model_cwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
+<a class="sourceLine" id="cb8-36" data-line-number="36">                                   <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb8-37" data-line-number="37">metrics_bcwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
+<a class="sourceLine" id="cb8-38" data-line-number="38">                                    <span class="dt">A=</span>UserFactors_bcwrmf,</a>
+<a class="sourceLine" id="cb8-39" data-line-number="39">                                    <span class="dt">B=</span>model_bcwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
+<a class="sourceLine" id="cb8-40" data-line-number="40">                                    <span class="dt">item_biases=</span>model_bcwrmf<span class="op">$</span>matrices<span class="op">$</span>item_bias,</a>
+<a class="sourceLine" id="cb8-41" data-line-number="41">                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a></code></pre></div>
+<p>These metrics are by default returned as a data frame, with each user representing a row and each metric a column - example:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">metrics_baseline <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="st">    </span><span class="kw">head</span>(<span class="dv">5</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="st">    </span><span class="kw">kable</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="st">    </span><span class="kw">kable_styling</span>()</a></code></pre></div>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+p_at_5
+</th>
+<th style="text-align:right;">
+tp_at_5
+</th>
+<th style="text-align:right;">
+r_at_5
+</th>
+<th style="text-align:right;">
+ap_at_5
+</th>
+<th style="text-align:right;">
+tap_at_5
+</th>
+<th style="text-align:right;">
+ndcg_at_5
+</th>
+<th style="text-align:right;">
+hit_at_5
+</th>
+<th style="text-align:right;">
+rr_at_5
+</th>
+<th style="text-align:right;">
+roc_auc
+</th>
+<th style="text-align:right;">
+pr_auc
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+<td style="text-align:right;">
+0.6
+</td>
+<td style="text-align:right;">
+0.0612245
+</td>
+<td style="text-align:right;">
+0.0561224
+</td>
+<td style="text-align:right;">
+0.5500000
+</td>
+<td style="text-align:right;">
+0.6564176
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:right;">
+0.8760428
+</td>
+<td style="text-align:right;">
+0.3042021
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+21
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+0.1428571
+</td>
+<td style="text-align:right;">
+0.0642857
+</td>
+<td style="text-align:right;">
+0.1800000
+</td>
+<td style="text-align:right;">
+0.3451913
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.5
+</td>
+<td style="text-align:right;">
+0.8816743
+</td>
+<td style="text-align:right;">
+0.1674521
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+38
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.0
+</td>
+<td style="text-align:right;">
+0.6895941
+</td>
+<td style="text-align:right;">
+0.0336285
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+43
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+0.0454545
+</td>
+<td style="text-align:right;">
+0.0378788
+</td>
+<td style="text-align:right;">
+0.3333333
+</td>
+<td style="text-align:right;">
+0.5087403
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:right;">
+0.9125022
+</td>
+<td style="text-align:right;">
+0.2569428
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+57
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+0.4
+</td>
+<td style="text-align:right;">
+0.1333333
+</td>
+<td style="text-align:right;">
+0.0933333
+</td>
+<td style="text-align:right;">
+0.2800000
+</td>
+<td style="text-align:right;">
+0.4703653
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.0
+</td>
+<td style="text-align:right;">
+0.8796032
+</td>
+<td style="text-align:right;">
+0.1777217
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="comparing-models" class="section level4">
+<h4>Comparing models</h4>
+<p>In order to compare models, one can instead summarize these metrics across users:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">all_metrics &lt;-<span class="st"> </span><span class="kw">list</span>(</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2">    <span class="st">`</span><span class="dt">Random</span><span class="st">`</span> =<span class="st"> </span>metrics_random,</a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">    <span class="st">`</span><span class="dt">Non-personalized</span><span class="st">`</span> =<span class="st"> </span>metrics_baseline,</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4">    <span class="st">`</span><span class="dt">Weighted-Lambda</span><span class="st">`</span> =<span class="st"> </span>metrics_wlr,</a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">    <span class="st">`</span><span class="dt">Hybrid-Explicit</span><span class="st">`</span> =<span class="st"> </span>metrics_hybrid,</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">    <span class="st">`</span><span class="dt">WRMF (a.k.a. iALS)</span><span class="st">`</span> =<span class="st"> </span>metrics_wrmf,</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">    <span class="st">`</span><span class="dt">bWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_bwrmf,</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">    <span class="st">`</span><span class="dt">CWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_cwrmf,</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">    <span class="st">`</span><span class="dt">bCWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_bcwrmf</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">)</a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">results &lt;-<span class="st"> </span>all_metrics <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-12" data-line-number="12"><span class="st">    </span><span class="kw">lapply</span>(<span class="cf">function</span>(df) <span class="kw">as.data.table</span>(df)[, <span class="kw">lapply</span>(.SD, mean)]) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-13" data-line-number="13"><span class="st">    </span>data.table<span class="op">::</span><span class="kw">rbindlist</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-14" data-line-number="14"><span class="st">    </span><span class="kw">as.data.frame</span>()</a>
+<a class="sourceLine" id="cb10-15" data-line-number="15"><span class="kw">row.names</span>(results) &lt;-<span class="st"> </span><span class="kw">names</span>(all_metrics)</a>
+<a class="sourceLine" id="cb10-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb10-17" data-line-number="17">results <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-18" data-line-number="18"><span class="st">    </span><span class="kw">kable</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb10-19" data-line-number="19"><span class="st">    </span><span class="kw">kable_styling</span>()</a></code></pre></div>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+p_at_5
+</th>
+<th style="text-align:right;">
+tp_at_5
+</th>
+<th style="text-align:right;">
+r_at_5
+</th>
+<th style="text-align:right;">
+ap_at_5
+</th>
+<th style="text-align:right;">
+tap_at_5
+</th>
+<th style="text-align:right;">
+ndcg_at_5
+</th>
+<th style="text-align:right;">
+hit_at_5
+</th>
+<th style="text-align:right;">
+rr_at_5
+</th>
+<th style="text-align:right;">
+roc_auc
+</th>
+<th style="text-align:right;">
+pr_auc
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Random
+</td>
+<td style="text-align:right;">
+0.012
+</td>
+<td style="text-align:right;">
+0.0150000
+</td>
+<td style="text-align:right;">
+0.0083583
+</td>
+<td style="text-align:right;">
+0.0036395
+</td>
+<td style="text-align:right;">
+0.0061500
+</td>
+<td style="text-align:right;">
+0.0121022
+</td>
+<td style="text-align:right;">
+0.06
+</td>
+<td style="text-align:right;">
+0.0270000
+</td>
+<td style="text-align:right;">
+0.4982773
+</td>
+<td style="text-align:right;">
+0.0175193
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Non-personalized
+</td>
+<td style="text-align:right;">
+0.200
+</td>
+<td style="text-align:right;">
+0.2005000
+</td>
+<td style="text-align:right;">
+0.0627890
+</td>
+<td style="text-align:right;">
+0.0388072
+</td>
+<td style="text-align:right;">
+0.1339833
+</td>
+<td style="text-align:right;">
+0.1945213
+</td>
+<td style="text-align:right;">
+0.57
+</td>
+<td style="text-align:right;">
+0.3593333
+</td>
+<td style="text-align:right;">
+0.8753696
+</td>
+<td style="text-align:right;">
+0.1319200
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Weighted-Lambda
+</td>
+<td style="text-align:right;">
+0.064
+</td>
+<td style="text-align:right;">
+0.0640000
+</td>
+<td style="text-align:right;">
+0.0170701
+</td>
+<td style="text-align:right;">
+0.0088474
+</td>
+<td style="text-align:right;">
+0.0349333
+</td>
+<td style="text-align:right;">
+0.0607423
+</td>
+<td style="text-align:right;">
+0.23
+</td>
+<td style="text-align:right;">
+0.1131667
+</td>
+<td style="text-align:right;">
+0.7708297
+</td>
+<td style="text-align:right;">
+0.0613431
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Hybrid-Explicit
+</td>
+<td style="text-align:right;">
+0.272
+</td>
+<td style="text-align:right;">
+0.2785000
+</td>
+<td style="text-align:right;">
+0.0882369
+</td>
+<td style="text-align:right;">
+0.0573663
+</td>
+<td style="text-align:right;">
+0.1946333
+</td>
+<td style="text-align:right;">
+0.2800543
+</td>
+<td style="text-align:right;">
+0.70
+</td>
+<td style="text-align:right;">
+0.4715000
+</td>
+<td style="text-align:right;">
+0.7556190
+</td>
+<td style="text-align:right;">
+0.1533399
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+WRMF (a.k.a. iALS)
+</td>
+<td style="text-align:right;">
+0.346
+</td>
+<td style="text-align:right;">
+0.3670000
+</td>
+<td style="text-align:right;">
+0.1494588
+</td>
+<td style="text-align:right;">
+0.0980779
+</td>
+<td style="text-align:right;">
+0.2642028
+</td>
+<td style="text-align:right;">
+0.3492838
+</td>
+<td style="text-align:right;">
+0.80
+</td>
+<td style="text-align:right;">
+0.5371667
+</td>
+<td style="text-align:right;">
+0.9399169
+</td>
+<td style="text-align:right;">
+0.2646486
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+bWRMF
+</td>
+<td style="text-align:right;">
+0.356
+</td>
+<td style="text-align:right;">
+0.3701667
+</td>
+<td style="text-align:right;">
+0.1399765
+</td>
+<td style="text-align:right;">
+0.0928390
+</td>
+<td style="text-align:right;">
+0.2685111
+</td>
+<td style="text-align:right;">
+0.3603558
+</td>
+<td style="text-align:right;">
+0.84
+</td>
+<td style="text-align:right;">
+0.5640000
+</td>
+<td style="text-align:right;">
+0.9365361
+</td>
+<td style="text-align:right;">
+0.2601866
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CWRMF
+</td>
+<td style="text-align:right;">
+0.360
+</td>
+<td style="text-align:right;">
+0.3813333
+</td>
+<td style="text-align:right;">
+0.1532975
+</td>
+<td style="text-align:right;">
+0.1051276
+</td>
+<td style="text-align:right;">
+0.2780389
+</td>
+<td style="text-align:right;">
+0.3677468
+</td>
+<td style="text-align:right;">
+0.80
+</td>
+<td style="text-align:right;">
+0.5741667
+</td>
+<td style="text-align:right;">
+0.9417654
+</td>
+<td style="text-align:right;">
+0.2739001
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+bCWRMF
+</td>
+<td style="text-align:right;">
+0.354
+</td>
+<td style="text-align:right;">
+0.3681667
+</td>
+<td style="text-align:right;">
+0.1429806
+</td>
+<td style="text-align:right;">
+0.0931165
+</td>
+<td style="text-align:right;">
+0.2675944
+</td>
+<td style="text-align:right;">
+0.3596550
+</td>
+<td style="text-align:right;">
+0.86
+</td>
+<td style="text-align:right;">
+0.5760000
+</td>
+<td style="text-align:right;">
+0.9395623
+</td>
+<td style="text-align:right;">
+0.2596115
+</td>
+</tr>
+</tbody>
+</table>
+<p>From these metrics, the best-performing model overall seems to be CWRMF (collective version of WRMF or iALS model, which incorporates side information about users and items), but it does not dominate across all metrics.</p>
+<p>It is hard to conclude for example whether adding item biases to the WRMF or the CWRMF model is an improvement, as some metrics improve while others deteriorate, and this is where specific properties about the dataset and the desired recommendation goals have to come in mind (e.g. one might decide that <span class="math inline">\(AP@K\)</span> is simply the most informative metric and make a decision based on it, or perhaps look at more specialized metrics).</p>
+<hr />
+<p>To keep in mind:</p>
+<ul>
+<li>These metrics were calculated on a sample of only 100 users, so their standard errors can be rather large, and most of them consider only the top-5 recommended items.</li>
+<li>All of these models have hyperparameters (such as the number of latent factors and regularization) which have not been tuned. When tuned, the differences between models might look different that what was obtained here.</li>
+<li>The data used here was an explicit-feedback dataset from which an “implicit-feedback” version was simulated by taking only the 4-star and 5-star ratings as the “observed” good items for each user.</li>
+<li>This is a very small dataset (MovieLens100k), thus these metrics should be taken with a grain of salt.</li>
+</ul>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
