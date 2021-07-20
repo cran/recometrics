@@ -1,4 +1,4 @@
-55c8bdf501f9a44251cb66474159e6f2 *DESCRIPTION
+7f3205f24fa9fc28cdc4d870e374beee *DESCRIPTION
 bb0566e915e1f94b9c617a3243439054 *LICENSE
 51c7346b2e9f854e0338d57ad029d11a *NAMESPACE
 3825fb487c097cc7433dbed09bafaf0e *R/RcppExports.R
@@ -7,9 +7,9 @@ bb0566e915e1f94b9c617a3243439054 *LICENSE
 0a55603eb01f7be701eb4bbe6d6a43ff *inst/doc/Evaluating_recommender_systems.R
 650707cc7f493bf505b51efdc46c6886 *inst/doc/Evaluating_recommender_systems.Rmd
 273718605422ac84e3f15f6e6fb02fd4 *inst/doc/Evaluating_recommender_systems.html
-b61ac5a08a0ef668938d630f3b4ce03e *man/calc.reco.metrics.Rd
+12a2956b9ca2281943ceabd8ec7016b7 *man/calc.reco.metrics.Rd
 7c43772c90ab2628285b5524c40bed3f *man/create.reco.train.test.Rd
-c791e46c27a4eecc5671e63dcf11abc8 *src/Makevars
+7b5f20a1785ddf400994db4cf592ef27 *src/Makevars
 f9b70dd1680e8ea7f7b26daeb850cd76 *src/RcppExports.cpp
 8a48f3f36ffcdec2e19221a32a327006 *src/Rwrapper.cpp
 476ece7298a10be47135db15d81a7c2e *src/recometrics.h
