@@ -3,7 +3,7 @@
 #' @importClassesFrom float float32
 #' @importFrom methods new
 #' @importFrom parallel detectCores
-#' @importFrom MatrixExtra as.csr.matrix sort_sparse_indices
+#' @importFrom MatrixExtra as.csr.matrix sort_sparse_indices emptySparse
 #' @importFrom float fl dbl
 #' @importFrom RhpcBLASctl blas_set_num_threads blas_get_num_procs
 #' @useDynLib recometrics, .registration=TRUE
@@ -41,13 +41,6 @@ check.fraction <- function(x, var="x") {
     if (x <= 0 || x >= 1)
         stop(sprintf("'%s' must be between zero and one.", var))
     return(x)
-}
-
-get.empty.csr <- function(nrow, ncol) {
-    out <- new("dgRMatrix")
-    out@Dim <- as.integer(c(nrow, ncol))
-    out@p <- integer(nrow+1L)
-    return(out)
 }
 
 #' @export
@@ -226,6 +219,20 @@ get.empty.csr <- function(nrow, ncol) {
 #' \href{https://github.com/david-cortes/R-openblas-in-windows}{this link}
 #' for instructions on getting OpenBLAS in R for Windows
 #' (Alternatively, Microsoft's R distribution comes with MKL preinstalled).
+#' 
+#' Doing computations in float32 precision depends on the package
+#' \href{https://cran.r-project.org/package=float}{float}, and as such comes
+#' with some caveats:\itemize{
+#' \item On Windows, if installing `float` from CRAN, it will use very unoptimized
+#' routines which will likely result in a slowdown compared to using regular
+#' double (numeric) type. Getting it to use an optimized BLAS library is not as
+#' simple as substituting the Rblas DLL - see the
+#' \href{https://github.com/wrathematics/float}{package's README} for details.
+#' \item On macOS, it will use static linking for `float`, thus if changing the BLAS
+#' library used by R, it will not change the float32 functions, and getting good
+#' performance out of it might require compiling it from source with `-march=native`
+#' flag.
+#' }
 #' @param X_train Training data for user-item interactions, with users denoting rows,
 #' items denoting columns, and values corresponding to confidence scores.
 #' Entries in `X_train` and `X_test` for each user should not intersect (that is,
@@ -430,7 +437,8 @@ calc.reco.metrics <- function(
         pr_auc <- TRUE
     }
     if (is.null(X_train)) {
-        X_train <- get.empty.csr(nrow(X_test), ncol(X_test))
+        X_train <- MatrixExtra::emptySparse(nrow(X_test), ncol(X_test),
+                                            format="R", dtype="d")
         consider_cold_start <- TRUE
     }
     
@@ -474,6 +482,14 @@ calc.reco.metrics <- function(
     k <- check.pos.int(k, "k", TRUE)
     min_pos_test <- check.pos.int(min_pos_test, "min_pos_test", TRUE)
     min_items_pool <- check.pos.int(min_items_pool, "min_items_pool", TRUE)
+
+    if (nthreads > 1L && !R_has_openmp()) {
+        msg <- paste0("Attempting to use more than 1 thread, but ",
+                      "package was compiled without OpenMP support.")
+        if (tolower(Sys.info()[["sysname"]]) == "darwin")
+            msg <- paste0(msg, " See https://mac.r-project.org/openmp/")
+        warning(msg)
+    }
     
     if (k > NCOL(X_test))
         stop("'k' should be smaller than the number of items.")

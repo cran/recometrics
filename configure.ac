@@ -1,0 +1,10 @@
+AC_INIT([recometrics],[0.1.5])
+AC_LANG(C++)
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[]], [[double *__restrict x;]])]
+    [SUPPORTS_RESTRICT="-DSUPPORTS_RESTRICT=1"]
+    [SUPPORTS_RESTRICT=""]
+)
+AC_SUBST(SUPPORTS_RESTRICT)
+AC_CONFIG_FILES([src/Makevars])
+AC_OUTPUT

@@ -45,15 +45,13 @@ using std::uint64_t;
 using std::int32_t;
 
 
-#if defined(__GNUG__) || defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__) || defined(__INTEL_COMPILER)
+#if defined(__GNUG__) || defined(__GNUC__) || defined(_MSC_VER) || defined(__clang__) || defined(__INTEL_COMPILER) || defined(__IBMCPP__) || defined(__ibmxl__) || defined(SUPPORTS_RESTRICT)
 #   define restrict __restrict
 #else
 #   define restrict 
 #endif
 
-#define restrict __restrict
-
-#if defined(_FOR_R)
+#if defined(_FOR_R) || defined(USE_BLAS)
 extern "C" double ddot_(const int *n, const double *dx, const int *incx, const double *dy, const int *incy);
 extern "C" float sdot_(const int *n, const float *dx, const int *incx, const float *dy, const int *incy);
 #endif
@@ -70,7 +68,7 @@ constexpr const int one = 1;
 [[gnu::hot]]
 static inline double dot1(const double *restrict x, const double *restrict y, const int n)
 {
-#if defined(_FOR_R)
+#if defined(_FOR_R) || defined(USE_BLAS)
     return ddot_(&n, x, &one, y, &one);
 #else
     double res = 0;
@@ -85,7 +83,7 @@ static inline double dot1(const double *restrict x, const double *restrict y, co
 [[gnu::hot]]
 static inline float dot1(const float *restrict x, const float *restrict y, const int n)
 {
-#if defined(_FOR_R)
+#if defined(_FOR_R) || defined(USE_BLAS)
     return sdot_(&n, x, &one, y, &one);
 #else
     float res = 0;
@@ -136,6 +134,7 @@ public:
             if (this->is_active && handle_is_locked)
                 interrupt_switch = false;
         }
+        this->restore_handle();
     }
 
     void restore_handle() {
@@ -838,8 +837,6 @@ void calc_metrics
                         if (hits == (int32_t)npos) break;
                     }
                 }
-                roc_auc[user] = 1. - (long double)(sum_ranks_pos - (npos * (npos + 1)) / 2)
-                                     / (long double)(npos * nneg);
                 pr_auc[user] = avg_p / (double)npos;
             }
         }

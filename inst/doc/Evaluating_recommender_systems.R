@@ -11,25 +11,7 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 is_check <- ("CheckExEnv" %in% search()) || any(c("_R_CHECK_TIMINGS_",
              "_R_CHECK_LICENSE_") %in% names(Sys.getenv()))
 
-## ---- message=FALSE, eval=FALSE-----------------------------------------------
-#  library(Matrix)
-#  library(MatrixExtra)
-#  library(data.table)
-#  library(kableExtra)
-#  library(recommenderlab)
-#  library(cmfrec)
-#  library(recometrics)
-#  
-#  data(MovieLense)
-#  X_raw <- MovieLense@data
-#  
-#  ### Converting it to implicit-feedback
-#  X_implicit <- as.coo.matrix(filterSparse(X_raw, function(x) x >= 4))
-#  str(X_implicit)
-
-## ---- message=FALSE, echo=FALSE-----------------------------------------------
-### Note: at the time or writing, the CRAN version of MatrixExtra does not
-### yet have the function 'filterSparse', hence this code.
+## ---- message=FALSE-----------------------------------------------------------
 library(Matrix)
 library(MatrixExtra)
 library(data.table)
@@ -42,10 +24,7 @@ data(MovieLense)
 X_raw <- MovieLense@data
 
 ### Converting it to implicit-feedback
-X_implicit <- as.coo.matrix(X_raw)
-X_implicit@i <- X_implicit@i[X_implicit@x >= 4]
-X_implicit@j <- X_implicit@j[X_implicit@x >= 4]
-X_implicit@x <- X_implicit@x[X_implicit@x >= 4]
+X_implicit <- as.coo.matrix(filterSparse(X_raw, function(x) x >= 4))
 str(X_implicit)
 
 ## -----------------------------------------------------------------------------
@@ -74,7 +53,6 @@ item_biases <- model_baseline$matrices$item_bias
 ## ---- eval=FALSE--------------------------------------------------------------
 #  ### Typical implicit-feedback ALS model
 #  ### a.k.a. "WRMF" (weighted regularized matrix factorization)
-#  set.seed(123)
 #  model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=10, verbose=FALSE)
 #  UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
 #  
@@ -82,7 +60,6 @@ item_biases <- model_baseline$matrices$item_bias
 #  ### implemented by software such as Spark,
 #  ### and called "Weighted-Lambda-Regularized Matrix Factorization".
 #  ### Note that it determines the user factors using the train+test data.
-#  set.seed(123)
 #  model_wlr <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
 #                           lambda=0.1, scale_lam=TRUE,
 #                           user_bias=FALSE, item_bias=FALSE,
@@ -95,7 +72,6 @@ item_biases <- model_baseline$matrices$item_bias
 #  ### adds "implicit features", which are a binarized version
 #  ### of the input data, but without weights.
 #  ### Note that it determines the user factors using the train+test data.
-#  set.seed(123)
 #  model_hybrid <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
 #                              lambda=20, scale_lam=FALSE,
 #                              user_bias=FALSE, item_bias=FALSE,
@@ -106,18 +82,15 @@ item_biases <- model_baseline$matrices$item_bias
 ## ---- echo=FALSE--------------------------------------------------------------
 ### Don't overload CRAN servers
 if (!is_check) {
-    set.seed(123)
     model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=10, verbose=FALSE)
     UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
     
-    set.seed(123)
     model_wlr <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
                              lambda=0.1, scale_lam=TRUE,
                              user_bias=FALSE, item_bias=FALSE,
                              k=10, verbose=FALSE)
     UserFactors_wlr <- t(cmfrec::factors(model_wlr, as.csr.matrix(X_raw)[users_test,]))
     
-    set.seed(123)
     model_hybrid <- cmfrec::CMF(as.coo.matrix(X_raw[-users_test, ]),
                                 lambda=20, scale_lam=FALSE,
                                 user_bias=FALSE, item_bias=FALSE,
@@ -125,7 +98,6 @@ if (!is_check) {
                                 k=10, verbose=FALSE)
     UserFactors_hybrid <- t(cmfrec::factors(model_hybrid, as.csr.matrix(X_raw)[users_test,]))
 } else {
-    set.seed(123)
     model_wrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), k=3,
                                        verbose=FALSE, niter=2, nthreads=1)
     UserFactors_wrmf <- t(cmfrec::factors(model_wrmf, X_train))
@@ -134,9 +106,9 @@ if (!is_check) {
 ## ---- eval=!is_check----------------------------------------------------------
 ### Processing user side information
 U <- as.data.table(MovieLenseUser)[-users_test, ]
-mean_age <- U[, mean(age)]
-sd_age <- U[, sd(age)]
-levels_occ <- U[, levels(occupation)]
+mean_age <- mean(U$age)
+sd_age <- sd(U$age)
+levels_occ <- levels(U$occupation)
 MatrixExtra::restore_old_matrix_behavior()
 process.U <- function(U, mean_age,sd_age, levels_occ) {
     U[, `:=`(
@@ -156,8 +128,8 @@ U_train <- process.U(U_train, mean_age,sd_age, levels_occ)
 
 ### Processing item side information
 I <- as.data.table(MovieLenseMeta)
-mean_year <- I[, mean(year, na.rm=TRUE)]
-sd_year <- I[, sd(year, na.rm=TRUE)]
+mean_year <- mean(I$year, na.rm=TRUE)
+sd_year <- sd(I$year, na.rm=TRUE)
 I[
     is.na(year), year := mean_year
 ][, `:=`(
@@ -169,16 +141,13 @@ I <- as.coo.matrix(I)
 
 ### Manually re-creating a binarized matrix and weights
 ### that will mimic the WRMF model
-X_rem_ones <- as.coo.matrix(X_rem)
-W_rem <- 1 + X_rem_ones@x
-X_rem_ones@x <- rep(1, length(X_rem_ones@x))
-X_train_ones <- X_train
-W_train <- 1 + X_train_ones@x
-X_train_ones@x <- rep(1, length(X_train_ones@x))
+X_rem_ones <- as.coo.matrix(mapSparse(X_rem, function(x) rep(1, length(x))))
+W_rem <- as.coo.matrix(mapSparse(X_rem, function(x) x+1))
+X_train_ones <- as.coo.matrix(mapSparse(X_train, function(x) rep(1, length(x))))
+W_train <- as.coo.matrix(mapSparse(X_train, function(x) x+1))
 
 ## ---- eval=!is_check----------------------------------------------------------
 ### WRMF model, but with item biases/intercepts
-set.seed(123)
 model_bwrmf <- cmfrec::CMF(X_rem_ones, weight=W_rem, NA_as_zero=TRUE,
                            lambda=1, scale_lam=FALSE,
                            center=FALSE, user_bias=FALSE, item_bias=TRUE,
@@ -187,7 +156,6 @@ UserFactors_bwrmf <- t(cmfrec::factors(model_bwrmf, X_train_ones, weight=W_train
 
 
 ### Collective WRMF model (taking user and item attributes)
-set.seed(123)
 model_cwrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), U=U, I=I,
                                     NA_as_zero_user=TRUE, NA_as_zero_item=TRUE,
                                     center_U=TRUE, center_I=TRUE,
@@ -196,7 +164,6 @@ model_cwrmf <- cmfrec::CMF_implicit(as.coo.matrix(X_rem), U=U, I=I,
 UserFactors_cwrmf <- t(cmfrec::factors(model_cwrmf, X_train, U=U_train))
 
 ### Collective WRMF plus item biases/intercepts
-set.seed(123)
 model_bcwrmf <- cmfrec::CMF(X_rem_ones, weight=W_rem, NA_as_zero=TRUE,
                             U=U, I=I, center_U=FALSE, center_I=FALSE,
                             NA_as_zero_user=TRUE, NA_as_zero_item=TRUE,
