@@ -52,8 +52,16 @@ using std::int32_t;
 #endif
 
 #if defined(_FOR_R) || defined(USE_BLAS)
+#ifndef _FOR_R
 extern "C" double ddot_(const int *n, const double *dx, const int *incx, const double *dy, const int *incy);
 extern "C" float sdot_(const int *n, const float *dx, const int *incx, const float *dy, const int *incy);
+#else
+#include <R_ext/RS.h>
+#include <R_ext/BLAS.h>
+extern "C" float F77_CALL(sdot)(const int *n, const float *dx, const int *incx, const float *dy, const int *incy);
+#define ddot_ F77_CALL(ddot)
+#define sdot_ F77_CALL(sdot)
+#endif
 #endif
 
 #ifndef _FOR_R
@@ -508,6 +516,9 @@ void calc_metrics
             if (pred_max == pred_min) goto set_as_NAN;
             if (std::isinf(pred_max) || std::isinf(pred_min)) goto set_as_NAN;
 
+            /* TODO: here could determine the magnitude of the noise to add according to
+               some middle ground between the minimum and maximum values, which are already
+               calculated by this point. */
             std::mt19937 rng_user(seed + (uint64_t)user);
             std::uniform_real_distribution<real_t> runif((real_t)(-1e-12), (real_t)1e-12);
             for (int32_t ix = 0; ix < move_to; ix++)
