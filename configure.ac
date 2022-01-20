@@ -1,4 +1,4 @@
-AC_INIT([recometrics], 0.1.5)
+AC_INIT([recometrics], 0.1.6)
 AC_LANG(C++)
 AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM([[]], [[double *__restrict x;]])],
@@ -6,5 +6,27 @@ AC_COMPILE_IFELSE(
     [SUPPORTS_RESTRICT=""]
 )
 AC_SUBST(SUPPORTS_RESTRICT)
+
+AC_LANG(C++)
+OLD_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -fno-math-errno"
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[]])],
+    [FNE_FLAG="-fno-math-errno"],
+    [FNE_FLAG=""]
+)
+CXXFLAGS="$OLD_CXXFLAGS"
+AC_SUBST(FNE_FLAG)
+
+OLD_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -fno-trapping-math"
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[]])],
+    [FNTP_FLAG="-fno-trapping-math"],
+    [FNTP_FLAG=""]
+)
+CXXFLAGS="$OLD_CXXFLAGS"
+AC_SUBST(FNTP_FLAG)
+
 AC_CONFIG_FILES([src/Makevars])
 AC_OUTPUT
