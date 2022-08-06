@@ -1,7 +1,7 @@
 Package: recometrics
 Type: Package
 Title: Evaluation Metrics for Implicit-Feedback Recommender Systems
-Version: 0.1.6
+Version: 0.1.6-1
 Author: David Cortes
 Maintainer: David Cortes <david.cortes.rivera@gmail.com>
 URL: https://github.com/david-cortes/recometrics
@@ -29,6 +29,6 @@ RoxygenNote: 7.1.1
 StagedInstall: TRUE
 Biarch: TRUE
 NeedsCompilation: yes
-Packaged: 2022-01-20 22:09:36 UTC; david
+Packaged: 2022-07-27 19:24:35 UTC; david
 Repository: CRAN
-Date/Publication: 2022-01-20 22:52:41 UTC
+Date/Publication: 2022-08-06 19:40:02 UTC

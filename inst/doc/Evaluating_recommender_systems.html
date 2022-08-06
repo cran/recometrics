@@ -14,6 +14,35 @@
 
 <title>Evaluating recommender systems</title>
 
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
 <script>$(document).ready(function(){
     if (typeof $('[data-toggle="tooltip"]').tooltip === 'function') {
         $('[data-toggle="tooltip"]').tooltip();
@@ -249,6 +278,7 @@ border: 0;
     </style>
 
 
+
 <style type="text/css">
   code {
     white-space: pre;
@@ -258,26 +288,27 @@ border: 0;
   }
 </style>
 <style type="text/css" data-origin="pandoc">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(data-line-number);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -286,9 +317,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -632,44 +663,44 @@ RR@K = \max_{i=1..K} \frac{1}{i} \:\:\:\text{s.t.}\:\:\: r_i \in \mathcal{T}
 <div id="loading-the-data" class="section level4">
 <h4>Loading the data</h4>
 <p>This section will load the MovieLens100K data and filter out observations with a rating of less than 4 stars in order to have something that resembles implicit feedback.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(Matrix)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">library</span>(MatrixExtra)</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw">library</span>(data.table)</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">library</span>(kableExtra)</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">library</span>(recommenderlab)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="kw">library</span>(cmfrec)</a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">library</span>(recometrics)</a>
-<a class="sourceLine" id="cb1-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">data</span>(MovieLense)</a>
-<a class="sourceLine" id="cb1-10" data-line-number="10">X_raw &lt;-<span class="st"> </span>MovieLense<span class="op">@</span>data</a>
-<a class="sourceLine" id="cb1-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="co">### Converting it to implicit-feedback</span></a>
-<a class="sourceLine" id="cb1-13" data-line-number="13">X_implicit &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">filterSparse</span>(X_raw, <span class="cf">function</span>(x) x <span class="op">&gt;=</span><span class="st"> </span><span class="dv">4</span>))</a>
-<a class="sourceLine" id="cb1-14" data-line-number="14"><span class="kw">str</span>(X_implicit)</a>
-<a class="sourceLine" id="cb1-15" data-line-number="15"><span class="co">#&gt; Formal class 'dgTMatrix' [package &quot;Matrix&quot;] with 6 slots</span></a>
-<a class="sourceLine" id="cb1-16" data-line-number="16"><span class="co">#&gt;   ..@ i       : int [1:55024] 0 1 4 5 9 15 16 17 20 22 ...</span></a>
-<a class="sourceLine" id="cb1-17" data-line-number="17"><span class="co">#&gt;   ..@ j       : int [1:55024] 0 0 0 0 0 0 0 0 0 0 ...</span></a>
-<a class="sourceLine" id="cb1-18" data-line-number="18"><span class="co">#&gt;   ..@ Dim     : int [1:2] 943 1664</span></a>
-<a class="sourceLine" id="cb1-19" data-line-number="19"><span class="co">#&gt;   ..@ Dimnames:List of 2</span></a>
-<a class="sourceLine" id="cb1-20" data-line-number="20"><span class="co">#&gt;   .. ..$ : chr [1:943] &quot;1&quot; &quot;2&quot; &quot;3&quot; &quot;4&quot; ...</span></a>
-<a class="sourceLine" id="cb1-21" data-line-number="21"><span class="co">#&gt;   .. ..$ : chr [1:1664] &quot;Toy Story (1995)&quot; &quot;GoldenEye (1995)&quot; &quot;Four Rooms (1995)&quot; &quot;Get Shorty (1995)&quot; ...</span></a>
-<a class="sourceLine" id="cb1-22" data-line-number="22"><span class="co">#&gt;   ..@ x       : num [1:55024] 5 4 4 4 4 5 4 5 5 5 ...</span></a>
-<a class="sourceLine" id="cb1-23" data-line-number="23"><span class="co">#&gt;   ..@ factors : list()</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">library</span>(Matrix)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">library</span>(MatrixExtra)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">library</span>(data.table)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="kw">library</span>(kableExtra)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="kw">library</span>(recommenderlab)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="kw">library</span>(cmfrec)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="kw">library</span>(recometrics)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a><span class="kw">data</span>(MovieLense)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>X_raw &lt;-<span class="st"> </span>MovieLense<span class="op">@</span>data</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a><span class="co">### Converting it to implicit-feedback</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>X_implicit &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">filterSparse</span>(X_raw, <span class="cf">function</span>(x) x <span class="op">&gt;=</span><span class="st"> </span><span class="dv">4</span>))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a><span class="kw">str</span>(X_implicit)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a><span class="co">#&gt; Formal class &#39;dgTMatrix&#39; [package &quot;Matrix&quot;] with 6 slots</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a><span class="co">#&gt;   ..@ i       : int [1:55024] 0 1 4 5 9 15 16 17 20 22 ...</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a><span class="co">#&gt;   ..@ j       : int [1:55024] 0 0 0 0 0 0 0 0 0 0 ...</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a><span class="co">#&gt;   ..@ Dim     : int [1:2] 943 1664</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a><span class="co">#&gt;   ..@ Dimnames:List of 2</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a><span class="co">#&gt;   .. ..$ : chr [1:943] &quot;1&quot; &quot;2&quot; &quot;3&quot; &quot;4&quot; ...</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a><span class="co">#&gt;   .. ..$ : chr [1:1664] &quot;Toy Story (1995)&quot; &quot;GoldenEye (1995)&quot; &quot;Four Rooms (1995)&quot; &quot;Get Shorty (1995)&quot; ...</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a><span class="co">#&gt;   ..@ x       : num [1:55024] 5 4 4 4 4 5 4 5 5 5 ...</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a><span class="co">#&gt;   ..@ factors : list()</span></span></code></pre></div>
 </div>
 <div id="creating-a-train-test-split" class="section level4">
 <h4>Creating a train-test split</h4>
 <p>Now leaving aside a random sample of 100 users for model evaluation, for whom 30% of the data will be left as a hold-out test set.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">reco_split &lt;-<span class="st"> </span><span class="kw">create.reco.train.test</span>(</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">    X_implicit,</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">    <span class="dt">users_test_fraction =</span> <span class="ot">NULL</span>,</a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">    <span class="dt">max_test_users =</span> <span class="dv">100</span>,</a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">    <span class="dt">items_test_fraction =</span> <span class="fl">0.3</span>,</a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">    <span class="dt">seed =</span> <span class="dv">123</span></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">)</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">X_train &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_train <span class="co">## Train data for test users</span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">X_test &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_test <span class="co">## Test data for test users</span></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">X_rem &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_rem <span class="co">## Data to fit the model</span></a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">users_test &lt;-<span class="st"> </span>reco_split<span class="op">$</span>users_test <span class="co">## IDs of the test users</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>reco_split &lt;-<span class="st"> </span><span class="kw">create.reco.train.test</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>    X_implicit,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="dt">users_test_fraction =</span> <span class="ot">NULL</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    <span class="dt">max_test_users =</span> <span class="dv">100</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="dt">items_test_fraction =</span> <span class="fl">0.3</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>    <span class="dt">seed =</span> <span class="dv">123</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>X_train &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_train <span class="co">## Train data for test users</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>X_test &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_test <span class="co">## Test data for test users</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>X_rem &lt;-<span class="st"> </span>reco_split<span class="op">$</span>X_rem <span class="co">## Data to fit the model</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>users_test &lt;-<span class="st"> </span>reco_split<span class="op">$</span>users_test <span class="co">## IDs of the test users</span></span></code></pre></div>
 </div>
 <div id="establishing-baselines" class="section level4">
 <h4>Establishing baselines</h4>
@@ -679,14 +710,14 @@ RR@K = \max_{i=1..K} \frac{1}{i} \:\:\:\text{s.t.}\:\:\: r_i \in \mathcal{T}
 <li>Always predicting the same score for each item regardless of the user (non-personalized).</li>
 </ul>
 <p>This section creates such baselines to compare against.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="co">### Random recommendations (random latent factors)</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">UserFactors_random &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="kw">nrow</span>(X_test) <span class="op">*</span><span class="st"> </span><span class="dv">5</span>), <span class="dt">nrow=</span><span class="dv">5</span>)</a>
-<a class="sourceLine" id="cb3-4" data-line-number="4">ItemFactors_random &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="kw">ncol</span>(X_test) <span class="op">*</span><span class="st"> </span><span class="dv">5</span>), <span class="dt">nrow=</span><span class="dv">5</span>)</a>
-<a class="sourceLine" id="cb3-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="co">### Non-personalized recommendations</span></a>
-<a class="sourceLine" id="cb3-7" data-line-number="7">model_baseline &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">MostPopular</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">implicit=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb3-8" data-line-number="8">item_biases &lt;-<span class="st"> </span>model_baseline<span class="op">$</span>matrices<span class="op">$</span>item_bias</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co">### Random recommendations (random latent factors)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>UserFactors_random &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="kw">nrow</span>(X_test) <span class="op">*</span><span class="st"> </span><span class="dv">5</span>), <span class="dt">nrow=</span><span class="dv">5</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>ItemFactors_random &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="kw">ncol</span>(X_test) <span class="op">*</span><span class="st"> </span><span class="dv">5</span>), <span class="dt">nrow=</span><span class="dv">5</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="co">### Non-personalized recommendations</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>model_baseline &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">MostPopular</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">implicit=</span><span class="ot">TRUE</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>item_biases &lt;-<span class="st"> </span>model_baseline<span class="op">$</span>matrices<span class="op">$</span>item_bias</span></code></pre></div>
 </div>
 <div id="fitting-models" class="section level4">
 <h4>Fitting models</h4>
@@ -699,33 +730,33 @@ RR@K = \max_{i=1..K} \frac{1}{i} \:\:\:\text{s.t.}\:\:\: r_i \in \mathcal{T}
 <p>All of these models are taken from the <code>cmfrec</code> package - see its documentation for more details about the models.</p>
 <p><strong>Important:</strong> for the explicit-feedback models, it’s not possible to use the same train-test split strategy as for the implicit-feedback variants, as the training data contains only 4 and 5 stars, which does not signal any dislikes and thus puts these models at a disadvantage. As such, here the user factors will be obtained from the full data (train+test), which gives them a quite unfair advantage compared to the other models.</p>
 <p>In theory, one could also split the full ratings data, and filter out low-star ratings in the test set only, but that would still distort a bit the metrics for implicit-feedback models. Alternatively, one could adjust the WRMF model to take low-star ratings as more negative entries with higher weight (e.g. giving them a value of -1 and a weight of 5 minus rating), which is supported by e.g. <code>cmfrec</code>. Note however that the only metric in this package that can accomodate such a scenatio (implicit feedback plus dislikes) is the <span class="math inline">\(NDCG@K\)</span> metric.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co">### Typical implicit-feedback ALS model</span></a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="co">### a.k.a. &quot;WRMF&quot; (weighted regularized matrix factorization)</span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">model_wrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF_implicit</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">UserFactors_wrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_wrmf, X_train))</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="co">### As a comparison, this is the typical explicit-feedback model,</span></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="co">### implemented by software such as Spark,</span></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8"><span class="co">### and called &quot;Weighted-Lambda-Regularized Matrix Factorization&quot;.</span></a>
-<a class="sourceLine" id="cb4-9" data-line-number="9"><span class="co">### Note that it determines the user factors using the train+test data.</span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">model_wlr &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(<span class="kw">as.coo.matrix</span>(X_raw[<span class="op">-</span>users_test, ]),</a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">                         <span class="dt">lambda=</span><span class="fl">0.1</span>, <span class="dt">scale_lam=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">                         <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">                         <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">UserFactors_wlr &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_wlr, <span class="kw">as.csr.matrix</span>(X_raw)[users_test,]))</a>
-<a class="sourceLine" id="cb4-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb4-16" data-line-number="16"><span class="co">### This is a different explicit-feedback model which</span></a>
-<a class="sourceLine" id="cb4-17" data-line-number="17"><span class="co">### uses the same regularization for each user and item</span></a>
-<a class="sourceLine" id="cb4-18" data-line-number="18"><span class="co">### (as opposed to the &quot;weighted-lambda&quot; model) and which</span></a>
-<a class="sourceLine" id="cb4-19" data-line-number="19"><span class="co">### adds &quot;implicit features&quot;, which are a binarized version</span></a>
-<a class="sourceLine" id="cb4-20" data-line-number="20"><span class="co">### of the input data, but without weights.</span></a>
-<a class="sourceLine" id="cb4-21" data-line-number="21"><span class="co">### Note that it determines the user factors using the train+test data.</span></a>
-<a class="sourceLine" id="cb4-22" data-line-number="22">model_hybrid &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(<span class="kw">as.coo.matrix</span>(X_raw[<span class="op">-</span>users_test, ]),</a>
-<a class="sourceLine" id="cb4-23" data-line-number="23">                            <span class="dt">lambda=</span><span class="dv">20</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb4-24" data-line-number="24">                            <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb4-25" data-line-number="25">                            <span class="dt">add_implicit_features=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb4-26" data-line-number="26">                            <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb4-27" data-line-number="27">UserFactors_hybrid &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_hybrid, <span class="kw">as.csr.matrix</span>(X_raw)[users_test,]))</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co">### Typical implicit-feedback ALS model</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="co">### a.k.a. &quot;WRMF&quot; (weighted regularized matrix factorization)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>model_wrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF_implicit</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>UserFactors_wrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_wrmf, X_train))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="co">### As a comparison, this is the typical explicit-feedback model,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="co">### implemented by software such as Spark,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="co">### and called &quot;Weighted-Lambda-Regularized Matrix Factorization&quot;.</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="co">### Note that it determines the user factors using the train+test data.</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>model_wlr &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(<span class="kw">as.coo.matrix</span>(X_raw[<span class="op">-</span>users_test, ]),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>                         <span class="dt">lambda=</span><span class="fl">0.1</span>, <span class="dt">scale_lam=</span><span class="ot">TRUE</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>                         <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">FALSE</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>                         <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>UserFactors_wlr &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_wlr, <span class="kw">as.csr.matrix</span>(X_raw)[users_test,]))</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a><span class="co">### This is a different explicit-feedback model which</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a><span class="co">### uses the same regularization for each user and item</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a><span class="co">### (as opposed to the &quot;weighted-lambda&quot; model) and which</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a><span class="co">### adds &quot;implicit features&quot;, which are a binarized version</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a><span class="co">### of the input data, but without weights.</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true"></a><span class="co">### Note that it determines the user factors using the train+test data.</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true"></a>model_hybrid &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(<span class="kw">as.coo.matrix</span>(X_raw[<span class="op">-</span>users_test, ]),</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true"></a>                            <span class="dt">lambda=</span><span class="dv">20</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true"></a>                            <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">FALSE</span>,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true"></a>                            <span class="dt">add_implicit_features=</span><span class="ot">TRUE</span>,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true"></a>                            <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true"></a>UserFactors_hybrid &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_hybrid, <span class="kw">as.csr.matrix</span>(X_raw)[users_test,]))</span></code></pre></div>
 </div>
 <div id="other-models" class="section level4">
 <h4>Other models</h4>
@@ -739,123 +770,123 @@ RR@K = \max_{i=1..K} \frac{1}{i} \:\:\:\text{s.t.}\:\:\: r_i \in \mathcal{T}
 <li>Biases and collective matrix factorization are not mutually exclusive, so both of these can be combined into a biased collective WRMF (“bCWRMF”).</li>
 </ul>
 <p>First processing the data as required for the new models:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="co">### Processing user side information</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">U &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseUser)[<span class="op">-</span>users_test, ]</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">mean_age &lt;-<span class="st"> </span><span class="kw">mean</span>(U<span class="op">$</span>age)</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">sd_age &lt;-<span class="st"> </span><span class="kw">sd</span>(U<span class="op">$</span>age)</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">levels_occ &lt;-<span class="st"> </span><span class="kw">levels</span>(U<span class="op">$</span>occupation)</a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">MatrixExtra<span class="op">::</span><span class="kw">restore_old_matrix_behavior</span>()</a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">process.U &lt;-<span class="st"> </span><span class="cf">function</span>(U, mean_age,sd_age, levels_occ) {</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8">    U[, <span class="st">`</span><span class="dt">:=</span><span class="st">`</span>(</a>
-<a class="sourceLine" id="cb5-9" data-line-number="9">        <span class="dt">id =</span> <span class="ot">NULL</span>,</a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">        <span class="dt">age =</span> (age <span class="op">-</span><span class="st"> </span>mean_age) <span class="op">/</span><span class="st"> </span>sd_age,</a>
-<a class="sourceLine" id="cb5-11" data-line-number="11">        <span class="dt">sex =</span> <span class="kw">as.numeric</span>(sex <span class="op">==</span><span class="st"> &quot;M&quot;</span>),</a>
-<a class="sourceLine" id="cb5-12" data-line-number="12">        <span class="dt">occupation =</span>  <span class="kw">factor</span>(occupation, levels_occ),</a>
-<a class="sourceLine" id="cb5-13" data-line-number="13">        <span class="dt">zipcode =</span> <span class="ot">NULL</span></a>
-<a class="sourceLine" id="cb5-14" data-line-number="14">    )]</a>
-<a class="sourceLine" id="cb5-15" data-line-number="15">    U &lt;-<span class="st"> </span>Matrix<span class="op">::</span><span class="kw">sparse.model.matrix</span>(<span class="op">~</span>.<span class="op">-</span><span class="dv">1</span>, <span class="dt">data=</span>U)</a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">    U &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(U)</a>
-<a class="sourceLine" id="cb5-17" data-line-number="17">    <span class="kw">return</span>(U)</a>
-<a class="sourceLine" id="cb5-18" data-line-number="18">}</a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">U &lt;-<span class="st"> </span><span class="kw">process.U</span>(U, mean_age,sd_age, levels_occ)</a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">U_train &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseUser)[users_test, ]</a>
-<a class="sourceLine" id="cb5-21" data-line-number="21">U_train &lt;-<span class="st"> </span><span class="kw">process.U</span>(U_train, mean_age,sd_age, levels_occ)</a>
-<a class="sourceLine" id="cb5-22" data-line-number="22"></a>
-<a class="sourceLine" id="cb5-23" data-line-number="23"><span class="co">### Processing item side information</span></a>
-<a class="sourceLine" id="cb5-24" data-line-number="24">I &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseMeta)</a>
-<a class="sourceLine" id="cb5-25" data-line-number="25">mean_year &lt;-<span class="st"> </span><span class="kw">mean</span>(I<span class="op">$</span>year, <span class="dt">na.rm=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb5-26" data-line-number="26">sd_year &lt;-<span class="st"> </span><span class="kw">sd</span>(I<span class="op">$</span>year, <span class="dt">na.rm=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb5-27" data-line-number="27">I[</a>
-<a class="sourceLine" id="cb5-28" data-line-number="28">    <span class="kw">is.na</span>(year), year <span class="op">:</span><span class="er">=</span><span class="st"> </span>mean_year</a>
-<a class="sourceLine" id="cb5-29" data-line-number="29">][, <span class="st">`</span><span class="dt">:=</span><span class="st">`</span>(</a>
-<a class="sourceLine" id="cb5-30" data-line-number="30">    <span class="dt">title =</span> <span class="ot">NULL</span>,</a>
-<a class="sourceLine" id="cb5-31" data-line-number="31">    <span class="dt">year =</span> (year <span class="op">-</span><span class="st"> </span>mean_year) <span class="op">/</span><span class="st"> </span>sd_year,</a>
-<a class="sourceLine" id="cb5-32" data-line-number="32">    <span class="dt">url =</span> <span class="ot">NULL</span></a>
-<a class="sourceLine" id="cb5-33" data-line-number="33">)]</a>
-<a class="sourceLine" id="cb5-34" data-line-number="34">I &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(I)</a>
-<a class="sourceLine" id="cb5-35" data-line-number="35"></a>
-<a class="sourceLine" id="cb5-36" data-line-number="36"><span class="co">### Manually re-creating a binarized matrix and weights</span></a>
-<a class="sourceLine" id="cb5-37" data-line-number="37"><span class="co">### that will mimic the WRMF model</span></a>
-<a class="sourceLine" id="cb5-38" data-line-number="38">X_rem_ones &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_rem, <span class="cf">function</span>(x) <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">length</span>(x))))</a>
-<a class="sourceLine" id="cb5-39" data-line-number="39">W_rem &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_rem, <span class="cf">function</span>(x) x<span class="op">+</span><span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb5-40" data-line-number="40">X_train_ones &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_train, <span class="cf">function</span>(x) <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">length</span>(x))))</a>
-<a class="sourceLine" id="cb5-41" data-line-number="41">W_train &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_train, <span class="cf">function</span>(x) x<span class="op">+</span><span class="dv">1</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="co">### Processing user side information</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>U &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseUser)[<span class="op">-</span>users_test, ]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>mean_age &lt;-<span class="st"> </span><span class="kw">mean</span>(U<span class="op">$</span>age)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>sd_age &lt;-<span class="st"> </span><span class="kw">sd</span>(U<span class="op">$</span>age)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>levels_occ &lt;-<span class="st"> </span><span class="kw">levels</span>(U<span class="op">$</span>occupation)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>MatrixExtra<span class="op">::</span><span class="kw">restore_old_matrix_behavior</span>()</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>process.U &lt;-<span class="st"> </span><span class="cf">function</span>(U, mean_age,sd_age, levels_occ) {</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>    U[, <span class="st">`</span><span class="dt">:=</span><span class="st">`</span>(</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>        <span class="dt">id =</span> <span class="ot">NULL</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>        <span class="dt">age =</span> (age <span class="op">-</span><span class="st"> </span>mean_age) <span class="op">/</span><span class="st"> </span>sd_age,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>        <span class="dt">sex =</span> <span class="kw">as.numeric</span>(sex <span class="op">==</span><span class="st"> &quot;M&quot;</span>),</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>        <span class="dt">occupation =</span>  <span class="kw">factor</span>(occupation, levels_occ),</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>        <span class="dt">zipcode =</span> <span class="ot">NULL</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>    )]</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>    U &lt;-<span class="st"> </span>Matrix<span class="op">::</span><span class="kw">sparse.model.matrix</span>(<span class="op">~</span>.<span class="op">-</span><span class="dv">1</span>, <span class="dt">data=</span>U)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>    U &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(U)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>    <span class="kw">return</span>(U)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>}</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>U &lt;-<span class="st"> </span><span class="kw">process.U</span>(U, mean_age,sd_age, levels_occ)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>U_train &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseUser)[users_test, ]</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>U_train &lt;-<span class="st"> </span><span class="kw">process.U</span>(U_train, mean_age,sd_age, levels_occ)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a><span class="co">### Processing item side information</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>I &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(MovieLenseMeta)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>mean_year &lt;-<span class="st"> </span><span class="kw">mean</span>(I<span class="op">$</span>year, <span class="dt">na.rm=</span><span class="ot">TRUE</span>)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a>sd_year &lt;-<span class="st"> </span><span class="kw">sd</span>(I<span class="op">$</span>year, <span class="dt">na.rm=</span><span class="ot">TRUE</span>)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a>I[</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a>    <span class="kw">is.na</span>(year), year <span class="op">:</span><span class="er">=</span><span class="st"> </span>mean_year</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a>][, <span class="st">`</span><span class="dt">:=</span><span class="st">`</span>(</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a>    <span class="dt">title =</span> <span class="ot">NULL</span>,</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a>    <span class="dt">year =</span> (year <span class="op">-</span><span class="st"> </span>mean_year) <span class="op">/</span><span class="st"> </span>sd_year,</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a>    <span class="dt">url =</span> <span class="ot">NULL</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a>)]</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a>I &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(I)</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a><span class="co">### Manually re-creating a binarized matrix and weights</span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a><span class="co">### that will mimic the WRMF model</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a>X_rem_ones &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_rem, <span class="cf">function</span>(x) <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">length</span>(x))))</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a>W_rem &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_rem, <span class="cf">function</span>(x) x<span class="op">+</span><span class="dv">1</span>))</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a>X_train_ones &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_train, <span class="cf">function</span>(x) <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">length</span>(x))))</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a>W_train &lt;-<span class="st"> </span><span class="kw">as.coo.matrix</span>(<span class="kw">mapSparse</span>(X_train, <span class="cf">function</span>(x) x<span class="op">+</span><span class="dv">1</span>))</span></code></pre></div>
 <p>Now fitting the models:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">### WRMF model, but with item biases/intercepts</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">model_bwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(X_rem_ones, <span class="dt">weight=</span>W_rem, <span class="dt">NA_as_zero=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">                           <span class="dt">lambda=</span><span class="dv">1</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">                           <span class="dt">center=</span><span class="ot">FALSE</span>, <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">                           <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">UserFactors_bwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_bwrmf, X_train_ones, <span class="dt">weight=</span>W_train))</a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb6-9" data-line-number="9"><span class="co">### Collective WRMF model (taking user and item attributes)</span></a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">model_cwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF_implicit</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">U=</span>U, <span class="dt">I=</span>I,</a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">                                    <span class="dt">NA_as_zero_user=</span><span class="ot">TRUE</span>, <span class="dt">NA_as_zero_item=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-12" data-line-number="12">                                    <span class="dt">center_U=</span><span class="ot">TRUE</span>, <span class="dt">center_I=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-13" data-line-number="13">                                    <span class="dt">lambda=</span><span class="fl">0.1</span>,</a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">                                    <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">UserFactors_cwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_cwrmf, X_train, <span class="dt">U=</span>U_train))</a>
-<a class="sourceLine" id="cb6-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb6-17" data-line-number="17"><span class="co">### Collective WRMF plus item biases/intercepts</span></a>
-<a class="sourceLine" id="cb6-18" data-line-number="18">model_bcwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(X_rem_ones, <span class="dt">weight=</span>W_rem, <span class="dt">NA_as_zero=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-19" data-line-number="19">                            <span class="dt">U=</span>U, <span class="dt">I=</span>I, <span class="dt">center_U=</span><span class="ot">FALSE</span>, <span class="dt">center_I=</span><span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb6-20" data-line-number="20">                            <span class="dt">NA_as_zero_user=</span><span class="ot">TRUE</span>, <span class="dt">NA_as_zero_item=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-21" data-line-number="21">                            <span class="dt">lambda=</span><span class="fl">0.1</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">                            <span class="dt">center=</span><span class="ot">FALSE</span>, <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">                            <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb6-24" data-line-number="24">UserFactors_bcwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_bcwrmf, X_train_ones,</a>
-<a class="sourceLine" id="cb6-25" data-line-number="25">                                        <span class="dt">weight=</span>W_train, <span class="dt">U=</span>U_train))</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="co">### WRMF model, but with item biases/intercepts</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>model_bwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(X_rem_ones, <span class="dt">weight=</span>W_rem, <span class="dt">NA_as_zero=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>                           <span class="dt">lambda=</span><span class="dv">1</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>                           <span class="dt">center=</span><span class="ot">FALSE</span>, <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>                           <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>UserFactors_bwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_bwrmf, X_train_ones, <span class="dt">weight=</span>W_train))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a><span class="co">### Collective WRMF model (taking user and item attributes)</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>model_cwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF_implicit</span>(<span class="kw">as.coo.matrix</span>(X_rem), <span class="dt">U=</span>U, <span class="dt">I=</span>I,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>                                    <span class="dt">NA_as_zero_user=</span><span class="ot">TRUE</span>, <span class="dt">NA_as_zero_item=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>                                    <span class="dt">center_U=</span><span class="ot">TRUE</span>, <span class="dt">center_I=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>                                    <span class="dt">lambda=</span><span class="fl">0.1</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>                                    <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>UserFactors_cwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_cwrmf, X_train, <span class="dt">U=</span>U_train))</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a><span class="co">### Collective WRMF plus item biases/intercepts</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>model_bcwrmf &lt;-<span class="st"> </span>cmfrec<span class="op">::</span><span class="kw">CMF</span>(X_rem_ones, <span class="dt">weight=</span>W_rem, <span class="dt">NA_as_zero=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>                            <span class="dt">U=</span>U, <span class="dt">I=</span>I, <span class="dt">center_U=</span><span class="ot">FALSE</span>, <span class="dt">center_I=</span><span class="ot">FALSE</span>,</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>                            <span class="dt">NA_as_zero_user=</span><span class="ot">TRUE</span>, <span class="dt">NA_as_zero_item=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>                            <span class="dt">lambda=</span><span class="fl">0.1</span>, <span class="dt">scale_lam=</span><span class="ot">FALSE</span>,</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>                            <span class="dt">center=</span><span class="ot">FALSE</span>, <span class="dt">user_bias=</span><span class="ot">FALSE</span>, <span class="dt">item_bias=</span><span class="ot">TRUE</span>,</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a>                            <span class="dt">k=</span><span class="dv">10</span>, <span class="dt">verbose=</span><span class="ot">FALSE</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>UserFactors_bcwrmf &lt;-<span class="st"> </span><span class="kw">t</span>(cmfrec<span class="op">::</span><span class="kw">factors</span>(model_bcwrmf, X_train_ones,</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>                                        <span class="dt">weight=</span>W_train, <span class="dt">U=</span>U_train))</span></code></pre></div>
 </div>
 <div id="calculating-metrics" class="section level4">
 <h4>Calculating metrics</h4>
 <p>Finally, calculating recommendation quality metrics for all these models:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">k &lt;-<span class="st"> </span><span class="dv">5</span> <span class="co">## Top-K recommendations to evaluate</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="co">### Baselines</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">metrics_random &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">                                    <span class="dt">A=</span>UserFactors_random,</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">                                    <span class="dt">B=</span>ItemFactors_random,</a>
-<a class="sourceLine" id="cb7-7" data-line-number="7">                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">metrics_baseline &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-9" data-line-number="9">                                      <span class="dt">A=</span><span class="ot">NULL</span>, <span class="dt">B=</span><span class="ot">NULL</span>,</a>
-<a class="sourceLine" id="cb7-10" data-line-number="10">                                      <span class="dt">item_biases=</span>item_biases,</a>
-<a class="sourceLine" id="cb7-11" data-line-number="11">                                      <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb7-13" data-line-number="13"><span class="co">### Simple models</span></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14">metrics_wrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-15" data-line-number="15">                                  <span class="dt">A=</span>UserFactors_wrmf,</a>
-<a class="sourceLine" id="cb7-16" data-line-number="16">                                  <span class="dt">B=</span>model_wrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
-<a class="sourceLine" id="cb7-17" data-line-number="17">                                  <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-18" data-line-number="18">metrics_wlr &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-19" data-line-number="19">                                 <span class="dt">A=</span>UserFactors_wlr,</a>
-<a class="sourceLine" id="cb7-20" data-line-number="20">                                 <span class="dt">B=</span>model_wlr<span class="op">$</span>matrices<span class="op">$</span>B,</a>
-<a class="sourceLine" id="cb7-21" data-line-number="21">                                 <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-22" data-line-number="22">metrics_hybrid &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-23" data-line-number="23">                                    <span class="dt">A=</span>UserFactors_hybrid,</a>
-<a class="sourceLine" id="cb7-24" data-line-number="24">                                    <span class="dt">B=</span>model_hybrid<span class="op">$</span>matrices<span class="op">$</span>B,</a>
-<a class="sourceLine" id="cb7-25" data-line-number="25">                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-26" data-line-number="26"></a>
-<a class="sourceLine" id="cb7-27" data-line-number="27"><span class="co">### More complex models</span></a>
-<a class="sourceLine" id="cb7-28" data-line-number="28">metrics_bwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-29" data-line-number="29">                                   <span class="dt">A=</span>UserFactors_bwrmf,</a>
-<a class="sourceLine" id="cb7-30" data-line-number="30">                                   <span class="dt">B=</span>model_bwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
-<a class="sourceLine" id="cb7-31" data-line-number="31">                                   <span class="dt">item_biases=</span>model_bwrmf<span class="op">$</span>matrices<span class="op">$</span>item_bias,</a>
-<a class="sourceLine" id="cb7-32" data-line-number="32">                                   <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-33" data-line-number="33">metrics_cwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-34" data-line-number="34">                                   <span class="dt">A=</span>UserFactors_cwrmf,</a>
-<a class="sourceLine" id="cb7-35" data-line-number="35">                                   <span class="dt">B=</span>model_cwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
-<a class="sourceLine" id="cb7-36" data-line-number="36">                                   <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb7-37" data-line-number="37">metrics_bcwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</a>
-<a class="sourceLine" id="cb7-38" data-line-number="38">                                    <span class="dt">A=</span>UserFactors_bcwrmf,</a>
-<a class="sourceLine" id="cb7-39" data-line-number="39">                                    <span class="dt">B=</span>model_bcwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</a>
-<a class="sourceLine" id="cb7-40" data-line-number="40">                                    <span class="dt">item_biases=</span>model_bcwrmf<span class="op">$</span>matrices<span class="op">$</span>item_bias,</a>
-<a class="sourceLine" id="cb7-41" data-line-number="41">                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>k &lt;-<span class="st"> </span><span class="dv">5</span> <span class="co">## Top-K recommendations to evaluate</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="co">### Baselines</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>metrics_random &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>                                    <span class="dt">A=</span>UserFactors_random,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>                                    <span class="dt">B=</span>ItemFactors_random,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>metrics_baseline &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>                                      <span class="dt">A=</span><span class="ot">NULL</span>, <span class="dt">B=</span><span class="ot">NULL</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>                                      <span class="dt">item_biases=</span>item_biases,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a>                                      <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a><span class="co">### Simple models</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a>metrics_wrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a>                                  <span class="dt">A=</span>UserFactors_wrmf,</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a>                                  <span class="dt">B=</span>model_wrmf<span class="op">$</span>matrices<span class="op">$</span>B,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true"></a>                                  <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true"></a>metrics_wlr &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true"></a>                                 <span class="dt">A=</span>UserFactors_wlr,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true"></a>                                 <span class="dt">B=</span>model_wlr<span class="op">$</span>matrices<span class="op">$</span>B,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true"></a>                                 <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true"></a>metrics_hybrid &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true"></a>                                    <span class="dt">A=</span>UserFactors_hybrid,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true"></a>                                    <span class="dt">B=</span>model_hybrid<span class="op">$</span>matrices<span class="op">$</span>B,</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true"></a>                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true"></a><span class="co">### More complex models</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true"></a>metrics_bwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true"></a>                                   <span class="dt">A=</span>UserFactors_bwrmf,</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true"></a>                                   <span class="dt">B=</span>model_bwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true"></a>                                   <span class="dt">item_biases=</span>model_bwrmf<span class="op">$</span>matrices<span class="op">$</span>item_bias,</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true"></a>                                   <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true"></a>metrics_cwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true"></a>                                   <span class="dt">A=</span>UserFactors_cwrmf,</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true"></a>                                   <span class="dt">B=</span>model_cwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true"></a>                                   <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true"></a>metrics_bcwrmf &lt;-<span class="st"> </span><span class="kw">calc.reco.metrics</span>(X_train, X_test,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true"></a>                                    <span class="dt">A=</span>UserFactors_bcwrmf,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true"></a>                                    <span class="dt">B=</span>model_bcwrmf<span class="op">$</span>matrices<span class="op">$</span>B,</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true"></a>                                    <span class="dt">item_biases=</span>model_bcwrmf<span class="op">$</span>matrices<span class="op">$</span>item_bias,</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true"></a>                                    <span class="dt">k=</span>k, <span class="dt">all_metrics=</span><span class="ot">TRUE</span>)</span></code></pre></div>
 <p>These metrics are by default returned as a data frame, with each user representing a row and each metric a column - example:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">metrics_baseline <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="st">    </span><span class="kw">head</span>(<span class="dv">5</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="st">    </span><span class="kw">kable</span>() <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="st">    </span><span class="kw">kable_styling</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>metrics_baseline <span class="op">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="st">    </span><span class="kw">head</span>(<span class="dv">5</span>) <span class="op">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="st">    </span><span class="kw">kable</span>() <span class="op">%&gt;%</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="st">    </span><span class="kw">kable_styling</span>()</span></code></pre></div>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -1075,25 +1106,25 @@ pr_auc
 <div id="comparing-models" class="section level4">
 <h4>Comparing models</h4>
 <p>In order to compare models, one can instead summarize these metrics across users:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">all_metrics &lt;-<span class="st"> </span><span class="kw">list</span>(</a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">    <span class="st">`</span><span class="dt">Random</span><span class="st">`</span> =<span class="st"> </span>metrics_random,</a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">    <span class="st">`</span><span class="dt">Non-personalized</span><span class="st">`</span> =<span class="st"> </span>metrics_baseline,</a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">    <span class="st">`</span><span class="dt">Weighted-Lambda</span><span class="st">`</span> =<span class="st"> </span>metrics_wlr,</a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">    <span class="st">`</span><span class="dt">Hybrid-Explicit</span><span class="st">`</span> =<span class="st"> </span>metrics_hybrid,</a>
-<a class="sourceLine" id="cb9-6" data-line-number="6">    <span class="st">`</span><span class="dt">WRMF (a.k.a. iALS)</span><span class="st">`</span> =<span class="st"> </span>metrics_wrmf,</a>
-<a class="sourceLine" id="cb9-7" data-line-number="7">    <span class="st">`</span><span class="dt">bWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_bwrmf,</a>
-<a class="sourceLine" id="cb9-8" data-line-number="8">    <span class="st">`</span><span class="dt">CWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_cwrmf,</a>
-<a class="sourceLine" id="cb9-9" data-line-number="9">    <span class="st">`</span><span class="dt">bCWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_bcwrmf</a>
-<a class="sourceLine" id="cb9-10" data-line-number="10">)</a>
-<a class="sourceLine" id="cb9-11" data-line-number="11">results &lt;-<span class="st"> </span>all_metrics <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb9-12" data-line-number="12"><span class="st">    </span><span class="kw">lapply</span>(<span class="cf">function</span>(df) <span class="kw">as.data.table</span>(df)[, <span class="kw">lapply</span>(.SD, mean)]) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb9-13" data-line-number="13"><span class="st">    </span>data.table<span class="op">::</span><span class="kw">rbindlist</span>() <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb9-14" data-line-number="14"><span class="st">    </span><span class="kw">as.data.frame</span>()</a>
-<a class="sourceLine" id="cb9-15" data-line-number="15"><span class="kw">row.names</span>(results) &lt;-<span class="st"> </span><span class="kw">names</span>(all_metrics)</a>
-<a class="sourceLine" id="cb9-16" data-line-number="16"></a>
-<a class="sourceLine" id="cb9-17" data-line-number="17">results <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb9-18" data-line-number="18"><span class="st">    </span><span class="kw">kable</span>() <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb9-19" data-line-number="19"><span class="st">    </span><span class="kw">kable_styling</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>all_metrics &lt;-<span class="st"> </span><span class="kw">list</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">Random</span><span class="st">`</span> =<span class="st"> </span>metrics_random,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">Non-personalized</span><span class="st">`</span> =<span class="st"> </span>metrics_baseline,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">Weighted-Lambda</span><span class="st">`</span> =<span class="st"> </span>metrics_wlr,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">Hybrid-Explicit</span><span class="st">`</span> =<span class="st"> </span>metrics_hybrid,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">WRMF (a.k.a. iALS)</span><span class="st">`</span> =<span class="st"> </span>metrics_wrmf,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">bWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_bwrmf,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">CWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_cwrmf,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>    <span class="st">`</span><span class="dt">bCWRMF</span><span class="st">`</span> =<span class="st"> </span>metrics_bcwrmf</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>results &lt;-<span class="st"> </span>all_metrics <span class="op">%&gt;%</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a><span class="st">    </span><span class="kw">lapply</span>(<span class="cf">function</span>(df) <span class="kw">as.data.table</span>(df)[, <span class="kw">lapply</span>(.SD, mean)]) <span class="op">%&gt;%</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true"></a><span class="st">    </span>data.table<span class="op">::</span><span class="kw">rbindlist</span>() <span class="op">%&gt;%</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true"></a><span class="st">    </span><span class="kw">as.data.frame</span>()</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true"></a><span class="kw">row.names</span>(results) &lt;-<span class="st"> </span><span class="kw">names</span>(all_metrics)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true"></a>results <span class="op">%&gt;%</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true"></a><span class="st">    </span><span class="kw">kable</span>() <span class="op">%&gt;%</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true"></a><span class="st">    </span><span class="kw">kable_styling</span>()</span></code></pre></div>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -1207,34 +1238,34 @@ Non-personalized
 Weighted-Lambda
 </td>
 <td style="text-align:right;">
-0.040
+0.036
 </td>
 <td style="text-align:right;">
-0.0400000
+0.0360000
 </td>
 <td style="text-align:right;">
-0.0075464
+0.0080785
 </td>
 <td style="text-align:right;">
-0.0045249
+0.0043460
 </td>
 <td style="text-align:right;">
-0.0245667
+0.0214333
 </td>
 <td style="text-align:right;">
-0.0425558
+0.0366013
 </td>
 <td style="text-align:right;">
-0.14
+0.13
 </td>
 <td style="text-align:right;">
-0.0881667
+0.0748333
 </td>
 <td style="text-align:right;">
-0.7608287
+0.7536814
 </td>
 <td style="text-align:right;">
-0.0557133
+0.0522353
 </td>
 </tr>
 <tr>
@@ -1242,34 +1273,34 @@ Weighted-Lambda
 Hybrid-Explicit
 </td>
 <td style="text-align:right;">
-0.264
+0.268
 </td>
 <td style="text-align:right;">
-0.2671667
+0.2711667
 </td>
 <td style="text-align:right;">
-0.0729474
+0.0750656
 </td>
 <td style="text-align:right;">
-0.0521933
+0.0508290
 </td>
 <td style="text-align:right;">
-0.2054917
+0.2045333
 </td>
 <td style="text-align:right;">
-0.2786540
+0.2808849
 </td>
 <td style="text-align:right;">
-0.62
+0.63
 </td>
 <td style="text-align:right;">
-0.4610000
+0.4601667
 </td>
 <td style="text-align:right;">
-0.7408111
+0.7390052
 </td>
 <td style="text-align:right;">
-0.1518263
+0.1527414
 </td>
 </tr>
 <tr>
@@ -1277,34 +1308,34 @@ Hybrid-Explicit
 WRMF (a.k.a. iALS)
 </td>
 <td style="text-align:right;">
-0.360
+0.352
 </td>
 <td style="text-align:right;">
-0.3746667
+0.3666667
 </td>
 <td style="text-align:right;">
-0.1328329
+0.1325404
 </td>
 <td style="text-align:right;">
-0.1017514
+0.0975948
 </td>
 <td style="text-align:right;">
-0.3020083
+0.2885889
 </td>
 <td style="text-align:right;">
-0.3755885
+0.3661113
 </td>
 <td style="text-align:right;">
-0.72
+0.75
 </td>
 <td style="text-align:right;">
-0.5631667
+0.5573333
 </td>
 <td style="text-align:right;">
-0.9417446
+0.9412953
 </td>
 <td style="text-align:right;">
-0.2652038
+0.2623818
 </td>
 </tr>
 <tr>
@@ -1312,34 +1343,34 @@ WRMF (a.k.a. iALS)
 bWRMF
 </td>
 <td style="text-align:right;">
-0.334
+0.342
 </td>
 <td style="text-align:right;">
-0.3473333
+0.3548333
 </td>
 <td style="text-align:right;">
-0.1220779
+0.1194934
 </td>
 <td style="text-align:right;">
-0.0908624
+0.0886808
 </td>
 <td style="text-align:right;">
-0.2780500
+0.2812833
 </td>
 <td style="text-align:right;">
-0.3511758
+0.3529575
 </td>
 <td style="text-align:right;">
-0.70
+0.71
 </td>
 <td style="text-align:right;">
-0.5361667
+0.5381667
 </td>
 <td style="text-align:right;">
-0.9379822
+0.9393616
 </td>
 <td style="text-align:right;">
-0.2558722
+0.2548754
 </td>
 </tr>
 <tr>
@@ -1347,34 +1378,34 @@ bWRMF
 CWRMF
 </td>
 <td style="text-align:right;">
-0.362
+0.364
 </td>
 <td style="text-align:right;">
-0.3771667
+0.3791667
 </td>
 <td style="text-align:right;">
-0.1322509
+0.1345078
 </td>
 <td style="text-align:right;">
-0.0978266
+0.0986737
 </td>
 <td style="text-align:right;">
-0.2985861
+0.2998361
 </td>
 <td style="text-align:right;">
-0.3758180
+0.3744677
 </td>
 <td style="text-align:right;">
-0.76
+0.77
 </td>
 <td style="text-align:right;">
-0.5685000
+0.5628333
 </td>
 <td style="text-align:right;">
-0.9442536
+0.9401424
 </td>
 <td style="text-align:right;">
-0.2614919
+0.2611053
 </td>
 </tr>
 <tr>
@@ -1382,34 +1413,34 @@ CWRMF
 bCWRMF
 </td>
 <td style="text-align:right;">
-0.348
+0.352
 </td>
 <td style="text-align:right;">
-0.3613333
+0.3653333
 </td>
 <td style="text-align:right;">
-0.1211798
+0.1225364
 </td>
 <td style="text-align:right;">
-0.0913341
+0.0897751
 </td>
 <td style="text-align:right;">
-0.2876361
+0.2847167
 </td>
 <td style="text-align:right;">
-0.3594521
+0.3577057
 </td>
 <td style="text-align:right;">
-0.72
+0.73
 </td>
 <td style="text-align:right;">
-0.5543333
+0.5335000
 </td>
 <td style="text-align:right;">
-0.9415006
+0.9409499
 </td>
 <td style="text-align:right;">
-0.2565175
+0.2524747
 </td>
 </tr>
 </tbody>
