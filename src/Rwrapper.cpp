@@ -25,7 +25,7 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #ifdef _FOR_R
 
-#include "recometrics.h"
+#include "recometrics.hpp"
 #include <type_traits>
 #include <Rcpp.h>
 #include <Rcpp/unwindProtect.h>
@@ -620,3 +620,13 @@ bool R_has_openmp()
     return false;
     #endif
 }
+
+/* Workaround in case it somehow tries and fails to link to non-R BLAS */
+#if defined(__APPLE__) || defined(_WIN32)
+float sdot_(const int *n, const float *dx, const int *incx, const float *dy, const int *incy)
+{
+    double res = 0.;
+    for (int ix = 0; ix < *n; ix++) res = std::fma(dx[ix], dy[ix], res);
+    return res;
+}
+#endif
